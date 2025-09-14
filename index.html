@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Utility Kit — simple, lightweight tools</title>
+  <link rel="icon" href="assets/favicon.svg">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Fonts (swap if you add Adobe Fonts kit) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/theme.css">
+  <link rel="stylesheet" href="assets/styles.css">
+  <meta name="description" content="Simple, private, in-browser tools. No uploads. No logins.">
+</head>
+<body>
+  <div class="container">
+    <header class="site">
+      <img class="logo" src="assets/logo.svg" alt="">
+      <div class="brand">Utility Kit</div>
+    </header>
+
+    <section class="hero">
+      <h1>in a world of despicable data-vampires and scam-shillers,<br>this page offers simple, lightweight tools for modern online living</h1>
+      <p>No logins. No popups. <strong>All processing in your browser</strong> — files never leave your device.</p>
+      <div class="trust">
+        <span class="badge">Private</span>
+        <span class="badge">Fast</span>
+        <span class="badge">Free</span>
+      </div>
+    </section>
+
+    <section>
+      <div class="grid">
+
+        <article class="card">
+          <h3>Small Caps Generator</h3>
+          <p>Convert text to Unicode small caps. Copy-ready.</p>
+          <a class="btn" href="tools/small-caps.html">Open tool</a>
+        </article>
+
+        <article class="card">
+          <h3>Gothic / Fraktur Text</h3>
+          <p>Convert text to Unicode Fraktur style.</p>
+          <a class="btn" href="tools/gothic-fraktur.html">Open tool</a>
+        </article>
+
+        <article class="card">
+          <h3>Typewriter / Monospace</h3>
+          <p>Unicode monospace letters & digits.</p>
+          <a class="btn" href="tools/typewriter.html">Open tool</a>
+        </article>
+
+        <article class="card">
+          <h3>Image Converter</h3>
+          <p>PNG ↔ JPG ↔ WebP with quality control.</p>
+          <a class="btn" href="tools/images-convert.html">Open tool</a>
+        </article>
+
+        <article class="card">
+          <h3>PDF Merger</h3>
+          <p>Combine multiple PDFs with a click.</p>
+          <a class="btn" href="tools/pdf-merge.html">Open tool</a>
+        </article>
+
+        <article class="card">
+          <h3>CSV ↔ JSON</h3>
+          <p>Convert both ways, quotes handled.</p>
+          <a class="btn" href="tools/csv-json.html">Open tool</a>
+        </article>
+
+        <article class="card">
+          <h3>Audio Trim</h3>
+          <p>Cut a clip by start + duration. Local only.</p>
+          <a class="btn" href="tools/audio-trim.html">Open tool</a>
+        </article>
+
+        <article class="card">
+          <h3>Audio Converter</h3>
+          <p>MP3/WAV/FLAC — all in your browser.</p>
+          <a class="btn" href="tools/audio-convert.html">Open tool</a>
+        </article>
+
+        <article class="card">
+          <h3>Video Converter</h3>
+          <p>WebM (VP9/Opus) or MP4 (if supported).</p>
+          <a class="btn" href="tools/video-convert.html">Open tool</a>
+        </article>
+
+      </div>
+    </section>
+
+    <footer class="site">
+      <div>
+        © <span id="y"></span> Utility Kit. 
+        <span class="small">Made for humans, not marketing bots.</span><br>
+        <a href="about.html">About</a> · <a href="privacy.html">Privacy</a>
+      </div>
+    </footer>
+  </div>
+<script>document.getElementById('y').textContent = new Date().getFullYear();</script>
+</body>
+</html>
