@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Typewriter / Monospace Text</title>
+<link rel="icon" href="../assets/favicon.svg">
+<link rel="stylesheet" href="../assets/theme.css">
+<link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+<div class="container">
+  <header class="site"><a class="brand" href="../index.html">← Utility Tools</a></header>
+
+  <h1 style="font-size:var(--h2-size); margin:6px 0 10px">Typewriter / Monospace Text</h1>
+  <p class="small">Converts letters and digits to Unicode monospace (𝚖𝚘𝚗𝚘𝚜𝚙𝚊𝚌𝚎). Great for stylistic labels and code-like text.</p>
+
+  <div class="section">
+    <label for="in">Input</label>
+    <textarea id="in" rows="6" placeholder="Type or paste…"></textarea>
+    <div class="stack" style="margin-top:10px">
+      <button id="go">Convert</button>
+      <button class="secondary" id="copy">Copy Output</button>
+      <button class="secondary" id="clear">Clear</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <label>Output</label>
+    <div id="out" class="out" style="min-height:100px; white-space:pre-wrap"></div>
+    <p class="small">Note: punctuation stays the same; only A–Z, a–z, and 0–9 are mapped.</p>
+  </div>
+
+  <footer class="site"><a href="../index.html">← Back to tools</a></footer>
+</div>
+
+<script>
+// Build mapping for A–Z, a–z, 0–9 to Mathematical Monospace block
+const mapRange = (start, count, base) =>
+  [...Array(count)].reduce((o,_,i)=> (o[String.fromCharCode(start+i)] = String.fromCodePoint(base+i), o), {});
+
+// Uppercase A..Z (U+1D670..1D689), lowercase a..z (U+1D68A..1D6A3), digits 0..9 (U+1D7F6..1D7FF)
+const MAP = {
+  ...mapRange(0x41, 26, 0x1D670),
+  ...mapRange(0x61, 26, 0x1D68A),
+  ...mapRange(0x30, 10, 0x1D7F6),
+};
+
+const input = document.getElementById('in'), out = document.getElementById('out');
+const convert = () => out.textContent = [...input.value].map(ch => MAP[ch] ?? ch).join('');
+document.getElementById('go').onclick = convert;
+document.getElementById('copy').onclick = async () => { await navigator.clipboard.writeText(out.textContent); alert('Copied'); };
+document.getElementById('clear').onclick = () => { input.value=''; out.textContent=''; };
+</script>
+</body>
+</html>

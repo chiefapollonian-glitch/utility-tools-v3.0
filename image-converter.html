@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Image Converter — PNG • JPG • WebP</title>
+<link rel="icon" href="../assets/favicon.svg">
+<link rel="stylesheet" href="../assets/theme.css">
+<link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+<div class="container">
+  <header class="site"><a class="brand" href="../index.html">← Utility Tools</a></header>
+
+  <h1 style="font-size:var(--h2-size);margin:6px 0 10px">Image Converter</h1>
+  <p class="small">Convert PNG/JPG/WEBP in your browser. Nothing is uploaded.</p>
+
+  <div class="section">
+    <label for="file">Choose image</label>
+    <input type="file" id="file" accept="image/png,image/jpeg,image/webp">
+    <div class="stack">
+      <label>Output format
+        <select id="fmt">
+          <option value="image/webp">WebP (.webp)</option>
+          <option value="image/jpeg">JPEG (.jpg)</option>
+          <option value="image/png">PNG (.png)</option>
+        </select>
+      </label>
+      <label>Quality <input id="q" type="range" min="0.5" max="0.95" step="0.05" value="0.8"></label>
+      <label id="bgwrap">JPG background <input id="bg" type="color" value="#0B0E12" style="vertical-align:middle"></label>
+    </div>
+    <div class="stack" style="margin-top:10px">
+      <button id="run">Convert</button>
+      <a id="dl" class="button secondary hidden" download>Download</a>
+    </div>
+    <p id="info" class="small"></p>
+    <img id="preview" style="max-width:100%;margin-top:10px" alt="">
+  </div>
+
+  <footer class="site"><a href="../index.html">← Back to tools</a></footer>
+</div>
+
+<script>
+const f = document.getElementById('file');
+const fmt = document.getElementById('fmt');
+const q = document.getElementById('q');
+const bg = document.getElementById('bg');
+const bgwrap = document.getElementById('bgwrap');
+const run = document.getElementById('run');
+const dl = document.getElementById('dl');
+const info = document.getElementById('info');
+const img = document.getElementById('preview');
+
+fmt.onchange = ()=> bgwrap.style.display = (fmt.value === 'image/jpeg') ? 'inline-block' : 'none';
+fmt.onchange();
+
+run.onclick = async () => {
+  if(!f.files[0]) return alert('Choose an image');
+  const file = f.files[0];
+  img.src = URL.createObjectURL(file);
+
+  const bmp = await createImageBitmap(file);
+  const c = document.createElement('canvas');
+  c.width = bmp.width; c.height = bmp.height;
+  const x = c.getContext('2d');
+
+  if (fmt.value === 'image/jpeg') {
+    // Fill background to replace transparency when exporting JPEG
+    x.fillStyle = bg.value || '#0B0E12';
+    x.fillRect(0,0,c.width,c.height);
+  }
+  x.drawImage(bmp,0,0);
+
+  const quality = parseFloat(q.value);
+  const blob = await new Promise(r => c.toBlob(r, fmt.value, quality));
+  const ext = fmt.value === 'image/webp' ? 'webp' : (fmt.value === 'image/png' ? 'png' : 'jpg');
+
+  dl.href = URL.createObjectURL(blob);
+  dl.download = (file.name.replace(/\.[^.]+$/, '') + '.' + ext);
+  dl.classList.remove('hidden');
+
+  const kb = s => (s/1024).toFixed(1) + ' KB';
+  info.textContent = `Original ${kb(file.size)} → New ${kb(blob.size||0)} (${ext.toUpperCase()}, quality ${quality})`;
+};
+</script>
+</body>
+</html>

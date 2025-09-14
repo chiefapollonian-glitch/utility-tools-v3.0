@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Audio Trim (MP3/WAV)</title>
+<link rel="icon" href="../assets/favicon.svg">
+<link rel="stylesheet" href="../assets/theme.css">
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../vendor/ffmpeg.min.js"></script>
+</head>
+<body>
+<div class="container">
+  <header class="site"><a class="brand" href="../index.html">← Utility Kit</a></header>
+
+  <h1 style="font-size:var(--h2-size)">Audio Trim</h1>
+  <p class="small">Trims locally with ffmpeg.wasm (first run may take a moment to load).</p>
+
+  <div class="section">
+    <label for="f">Choose audio file</label>
+    <input type="file" id="f" accept="audio/*">
+    <div class="stack">
+      <label>Start (sec) <input id="s" type="number" value="0" min="0" style="width:120px"></label>
+      <label>Duration (sec) <input id="d" type="number" value="10" min="1" style="width:120px"></label>
+    </div>
+    <div class="stack" style="margin-top:10px">
+      <button id="go">Trim to MP3</button>
+      <a id="dl" class="button secondary hidden" download="trim.mp3">Download</a>
+    </div>
+  </div>
+
+  <footer class="site"><a href="../index.html">← Back to tools</a></footer>
+</div>
+
+<script>
+const { createFFmpeg, fetchFile } = FFmpeg;
+const ffmpeg = createFFmpeg({ log:false });
+go.onclick = async () => {
+  const file = f.files?.[0]; if(!file) return alert('Pick a file');
+  if (!ffmpeg.isLoaded()) await ffmpeg.load();
+  ffmpeg.FS('writeFile','in', await fetchFile(file));
+  await ffmpeg.run('-ss', s.value, '-t', d.value, '-i', 'in', '-codec:a', 'libmp3lame', '-b:a','192k', 'out.mp3');
+  const data = ffmpeg.FS('readFile','out.mp3');
+  dl.href = URL.createObjectURL(new Blob([data.buffer],{type:'audio/mpeg'}));
+  dl.classList.remove('hidden');
+};
+</script>
+</body>
+</html>

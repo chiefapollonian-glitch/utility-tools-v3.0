@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PDF Merger</title>
+<link rel="icon" href="../assets/favicon.svg">
+<link rel="stylesheet" href="../assets/theme.css">
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../vendor/pdf-lib.min.js"></script>
+</head>
+<body>
+<div class="container">
+  <header class="site"><a class="brand" href="../index.html">← Utility Kit</a></header>
+
+  <h1 style="font-size:var(--h2-size)">PDF Merger</h1>
+  <p class="small">Merge PDFs locally. Nothing leaves your device.</p>
+
+  <div class="section">
+    <label for="files">Select PDFs (order matters)</label>
+    <input type="file" id="files" accept="application/pdf" multiple>
+    <div class="stack" style="margin-top:10px">
+      <button id="merge">Merge</button>
+      <a id="dl" class="button secondary hidden" download="merged.pdf">Download</a>
+    </div>
+  </div>
+
+  <footer class="site"><a href="../index.html">← Back to tools</a></footer>
+</div>
+
+<script>
+const { PDFDocument } = PDFLib;
+merge.onclick = async () => {
+  const files = [...document.getElementById('files').files];
+  if (!files.length) return alert('Select PDFs');
+  const out = await PDFDocument.create();
+  for (const f of files) {
+    const bytes = new Uint8Array(await f.arrayBuffer());
+    const src = await PDFDocument.load(bytes);
+    const pages = await out.copyPages(src, src.getPageIndices());
+    pages.forEach(p => out.addPage(p));
+  }
+  const pdfBytes = await out.save();
+  const blob = new Blob([pdfBytes], {type:'application/pdf'});
+  dl.href = URL.createObjectURL(blob);
+  dl.classList.remove('hidden');
+};
+</script>
+</body>
+</html>

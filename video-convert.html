@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Video Converter — MP4 • WebM</title>
+<link rel="icon" href="../assets/favicon.svg">
+<link rel="stylesheet" href="../assets/theme.css">
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../vendor/ffmpeg.min.js"></script>
+</head>
+<body>
+<div class="container">
+  <header class="site"><a class="brand" href="../index.html">← Utility Tools</a></header>
+
+  <h1 style="font-size:var(--h2-size);margin:6px 0 10px">Video Converter</h1>
+  <p class="small">Convert to WebM (VP9/Opus) or MP4. Runs locally; large files may be slow on older devices.</p>
+
+  <div class="section">
+    <label for="f">Choose video file</label>
+    <input type="file" id="f" accept="video/*">
+    <div class="stack">
+      <label>Output
+        <select id="outfmt">
+          <option value="webm">WebM (VP9/Opus)</option>
+          <option value="mp4">MP4 (H.264/AAC)</option>
+        </select>
+      </label>
+      <label>Resolution
+        <select id="res">
+          <option value="same">Same as source</option>
+          <option value="1280:720">720p</option>
+          <option value="1920:1080">1080p</option>
+        </select>
+      </label>
+      <label>Quality/CRF
+        <input id="crf" type="number" value="28" min="18" max="40" style="width:100px">
+      </label>
+    </div>
+    <div class="stack" style="margin-top:10px">
+      <button id="go">Convert</button>
+      <a id="dl" class="button secondary hidden" download>Download</a>
+    </div>
+    <p id="log" class="small"></p>
+    <p class="small">Note: MP4 encoding may not be available in some ffmpeg.wasm builds. If it fails, try WebM.</p>
+  </div>
+
+  <footer class="site"><a href="../index.html">← Back to tools</a></footer>
+</div>
+
+<script>
+const { createFFmpeg, fetchFile } = FFmpeg;
+const ffmpeg = createFFmpeg({ log:false });
+
+function nameWithExt(name, ext){ return name.replace(/\.[^.]+$/, '') + '.' + ext; }
+
+document.getElementById('go').onclick = async () => {
+  const file = document.getElementById('f').files?.[0];
+  if (!file) return alert('Pick a file');
+  const fmt = document.getElementById('outfmt').value;
+  const res = document.getElementById('res').value;
+  const crf = String(Math.max(18, Math.min(40, parseInt(document.getElementById('crf').value||28))));
+  const target = 'out.' + fmt;
+
+  const log = (t)=> document.getElementById('log').textContent = t;
+
+  log('Loading engine…');
+  if (!ffmpeg.isLoaded()) await ffmpeg.load();
+
+  ffmpeg.FS('writeFile','in', await fetchFile(file));
+  log('Converting…');
+
+  const scaleArgs = (res==='same') ? [] : ['-vf', `scale=${res}:flags=lanczos`];
+
+  try {
+    if (fmt === 'webm') {
+      // VP9 video + Opus audio
+      await ffmpeg.run(
+        '-i','in',
+        ...scaleArgs,
+        '-c:v','libvpx-vp9','-b:v','0','-crf', crf,
+        '-c:a','libopus','-b:a','128k',
+        target
+      );
+    } else {
+      // MP4 — may fail if H.264/AAC encoders are unavailable in your build
+      await ffmpeg.run(
+        '-i','in',
+        ...scaleArgs,
+        '-c:v','libx264','-preset','veryfast','-crf', crf,
+        '-c:a','aac','-b:a','128k','-movflags','+faststart',
+        target
+      );
+    }
+  } catch(e){
+    log('Error during encode: ' + e.message);
+    alert('Encoding failed. Try WebM output if MP4 isn’t supported in this build.');
+    return;
+  }
+
+  const data = ffmpeg.FS('readFile', target);
+  const blob = new Blob([data.buffer], { type: (fmt==='webm'?'video/webm':'video/mp4') });
+  const a = document.getElementById('dl');
+  a.href = URL.createObjectURL(blob);
+  a.download = nameWithExt(file.name, fmt);
+  a.classList.remove('hidden');
+  log('Done.');
+};
+</script>
+</body>
+</html>

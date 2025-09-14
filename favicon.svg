@@ -1,0 +1,6 @@
+<!-- save this as assets/favicon.svg -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <circle cx="32" cy="32" r="30" fill="#0B0E12" stroke="#E0446A" stroke-width="4"/>
+  <ellipse cx="32" cy="32" rx="18" ry="10" fill="none" stroke="#F3F6FA" stroke-width="3"/>
+  <circle cx="32" cy="32" r="6" fill="#E0446A"/>
+</svg>

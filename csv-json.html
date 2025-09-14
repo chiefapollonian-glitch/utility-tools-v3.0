@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CSV ↔ JSON Converter</title>
+<link rel="icon" href="../assets/favicon.svg">
+<link rel="stylesheet" href="../assets/theme.css">
+<link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+<div class="container">
+  <header class="site"><a class="brand" href="../index.html">← Utility Tools</a></header>
+
+  <h1 style="font-size:var(--h2-size);margin:6px 0 10px">CSV ↔ JSON</h1>
+  <p class="small">Convert between CSV and JSON completely in your browser. Handles quoted fields, commas, and newlines.</p>
+
+  <div class="section">
+    <h3>CSV → JSON</h3>
+    <label for="csv">CSV (first row = headers)</label>
+    <textarea id="csv" rows="8" placeholder="name,age&#10;Alice,30&#10;Bob,25"></textarea>
+    <div class="stack">
+      <label>Delimiter <input id="delim" type="text" value="," style="width:60px"></label>
+      <button id="csv2json">Convert to JSON</button>
+      <button class="secondary" id="copyJson">Copy JSON</button>
+      <button class="secondary" id="clearJson">Clear</button>
+    </div>
+    <label>JSON Output</label>
+    <textarea id="jsonOut" rows="8" class="out"></textarea>
+  </div>
+
+  <div class="section">
+    <h3>JSON → CSV</h3>
+    <label for="json">JSON (array of objects)</label>
+    <textarea id="json" rows="8" placeholder='[{"name":"Alice","age":30},{"name":"Bob","age":25}]'></textarea>
+    <div class="stack">
+      <label>Delimiter <input id="delim2" type="text" value="," style="width:60px"></label>
+      <button id="json2csv">Convert to CSV</button>
+      <button class="secondary" id="copyCsv">Copy CSV</button>
+      <button class="secondary" id="clearCsv">Clear</button>
+    </div>
+    <label>CSV Output</label>
+    <textarea id="csvOut" rows="8" class="out"></textarea>
+  </div>
+
+  <footer class="site"><a href="../index.html">← Back to tools</a></footer>
+</div>
+
+<script>
+function parseCSV(str, delim=',') {
+  const out = [[]];
+  let i=0, field='', quoted=false;
+  while (i < str.length) {
+    const c = str[i];
+    if (quoted) {
+      if (c === '"') {
+        if (str[i+1] === '"') { field += '"'; i+=2; continue; }
+        quoted = false; i++; continue;
+      }
+      field += c; i++; continue;
+    }
+    if (c === '"') { quoted = true; i++; continue; }
+    if (c === '\r') { i++; continue; }
+    if (c === '\n') { out[out.length-1].push(field); field=''; out.push([]); i++; continue; }
+    if (c === delim) { out[out.length-1].push(field); field=''; i++; continue; }
+    field += c; i++;
+  }
+  out[out.length-1].push(field);
+  // trim trailing empty row
+  if (out.length && out[out.length-1].length===1 && out[out.length-1][0]==='') out.pop();
+  return out;
+}
+
+function toCSV(rows, delim=',') {
+  const esc = v => {
+    if (v==null) v='';
+    v = String(v);
+    const needs = v.includes('"') || v.includes('\n') || v.includes('\r') || v.includes(delim);
+    if (needs) v = '"' + v.replace(/"/g,'""') + '"';
+    return v;
+  };
+  return rows.map(r => r.map(esc).join(delim)).join('\n');
+}
+
+document.getElementById('csv2json').onclick = () => {
+  const delim = document.getElementById('delim').value || ',';
+  const rows = parseCSV(document.getElementById('csv').value, delim);
+  if (!rows.length) return;
+  const headers = rows[0];
+  const data = rows.slice(1).map(r => {
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = r[i] ?? '');
+    return obj;
+  });
+  document.getElementById('jsonOut').value = JSON.stringify(data, null, 2);
+};
+document.getElementById('json2csv').onclick = () => {
+  const delim = document.getElementById('delim2').value || ',';
+  let data;
+  try { data = JSON.parse(document.getElementById('json').value); }
+  catch(e){ alert('Invalid JSON'); return; }
+  if (!Array.isArray(data) || !data.length || typeof data[0] !== 'object') {
+    alert('Provide JSON as an array of objects.'); return;
+  }
+  const headers = Array.from(new Set(data.flatMap(o => Object.keys(o))));
+  const rows = [headers, ...data.map(o => headers.map(h => o[h] ?? ''))];
+  document.getElementById('csvOut').value = toCSV(rows, delim);
+};
+
+document.getElementById('copyJson').onclick = async ()=>{ await navigator.clipboard.writeText(document.getElementById('jsonOut').value); alert('Copied JSON'); };
+document.getElementById('copyCsv').onclick = async ()=>{ await navigator.clipboard.writeText(document.getElementById('csvOut').value); alert('Copied CSV'); };
+document.getElementById('clearJson').onclick = ()=>{ document.getElementById('jsonOut').value=''; };
+document.getElementById('clearCsv').onclick = ()=>{ document.getElementById('csvOut').value=''; };
+</script>
+</body>
+</html>

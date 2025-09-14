@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Audio Converter — MP3 • WAV • FLAC</title>
+<link rel="icon" href="../assets/favicon.svg">
+<link rel="stylesheet" href="../assets/theme.css">
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../vendor/ffmpeg.min.js"></script>
+</head>
+<body>
+<div class="container">
+  <header class="site"><a class="brand" href="../index.html">← Utility Tools</a></header>
+
+  <h1 style="font-size:var(--h2-size);margin:6px 0 10px">Audio Converter</h1>
+  <p class="small">Convert MP3/WAV/FLAC locally with ffmpeg.wasm. First run may take a moment to load.</p>
+
+  <div class="section">
+    <label for="f">Choose audio file</label>
+    <input type="file" id="f" accept="audio/*">
+    <div class="stack">
+      <label>Output
+        <select id="outfmt">
+          <option value="mp3">MP3 (192 kbps)</option>
+          <option value="wav">WAV (PCM 16-bit)</option>
+          <option value="flac">FLAC (lossless)</option>
+        </select>
+      </label>
+      <label id="mp3b" style="display:inline-block">Bitrate (kbps)
+        <input id="br" type="number" value="192" min="96" max="320" style="width:100px">
+      </label>
+    </div>
+    <div class="stack" style="margin-top:10px">
+      <button id="go">Convert</button>
+      <a id="dl" class="button secondary hidden" download>Download</a>
+    </div>
+    <p id="log" class="small"></p>
+  </div>
+
+  <footer class="site"><a href="../index.html">← Back to tools</a></footer>
+</div>
+
+<script>
+const { createFFmpeg, fetchFile } = FFmpeg;
+const ffmpeg = createFFmpeg({ log:false });
+
+const outfmt = document.getElementById('outfmt');
+const br = document.getElementById('br');
+outfmt.onchange = ()=> document.getElementById('mp3b').style.display = (outfmt.value==='mp3')?'inline-block':'none';
+outfmt.onchange();
+
+function nameWithExt(name, ext){ return name.replace(/\.[^.]+$/, '') + '.' + ext; }
+
+document.getElementById('go').onclick = async () => {
+  const file = document.getElementById('f').files?.[0];
+  if (!file) return alert('Pick a file');
+  const ext = outfmt.value;
+  const target = 'out.' + ext;
+
+  document.getElementById('log').textContent = 'Loading engine…';
+  if (!ffmpeg.isLoaded()) await ffmpeg.load();
+
+  document.getElementById('log').textContent = 'Converting…';
+  ffmpeg.FS('writeFile','in', await fetchFile(file));
+  if (ext === 'mp3') {
+    const bps = Math.max(96, Math.min(320, parseInt(br.value||192))) + 'k';
+    await ffmpeg.run('-i','in','-codec:a','libmp3lame','-b:a', bps, target);
+  } else if (ext === 'wav') {
+    await ffmpeg.run('-i','in','-codec:a','pcm_s16le', target);
+  } else if (ext === 'flac') {
+    await ffmpeg.run('-i','in','-codec:a','flac','-compression_level','5', target);
+  }
+  const data = ffmpeg.FS('readFile', target);
+  const blob = new Blob([data.buffer], { type: (ext==='mp3'?'audio/mpeg':(ext==='wav'?'audio/wav':'audio/flac')) });
+  const a = document.getElementById('dl');
+  a.href = URL.createObjectURL(blob);
+  a.download = nameWithExt(file.name, ext);
+  a.classList.remove('hidden');
+  document.getElementById('log').textContent = 'Done.';
+};
+</script>
+</body>
+</html>

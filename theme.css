@@ -1,0 +1,133 @@
+:root {
+  /* Color system — blue/grey/black base, off-red/magenta accent */
+  --bg: #0B0E12;          /* page background (deep blue-black) */
+  --bg-elev: #12161D;     /* cards/hero panels */
+  --text: #F3F6FA;        /* near-white text */
+  --muted: #AEB7C4;       /* secondary text */
+  --brand: #E0446A;       /* off-red with magenta tint */
+  --brand-2: #C13A5A;     /* darker hover */
+  --danger: #ff6b6b;
+  --ok: #58e3a0;
+  --border: #1F2530;      /* subtle divider */
+  --input-bg: #0E131A;    /* inputs/output areas */
+
+  /* Typography */
+  --font-sans: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  --base-size: 16px;
+  --h1-size: clamp(28px, 5vw, 44px);
+  --h2-size: clamp(22px, 3.5vw, 32px);
+
+  /* Layout */
+  --radius: 16px;
+  --pad: 16px;
+  --card-gap: 16px;
+  --maxw: 980px;
+
+  /* Effects */
+  --shadow: 0 8px 28px rgba(0,0,0,.45);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #fbfbfd;
+    --bg-elev: #ffffff;
+    --text: #1c1e21;
+    --muted: #5b626e;
+    --border: #e6e8ee;
+    --input-bg: #ffffff;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding:0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--base-size);
+  line-height: 1.55;
+}
+
+.container { max-width: var(--maxw); margin: 0 auto; padding: 24px 16px; }
+
+header.site {
+  display:flex; align-items:center; gap:12px; margin-bottom: 18px;
+}
+header.site img.logo { width: 28px; height: 28px; }
+header.site .brand { font-weight: 700; letter-spacing: .3px; }
+
+.hero {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.hero h1 { font-size: var(--h1-size); margin: 0 0 12px; }
+.hero p { color: var(--muted); margin: 0; }
+
+.trust {
+  display:flex; gap: 12px; align-items:center; flex-wrap:wrap;
+  margin-top: 12px; color: var(--muted);
+}
+.badge {
+  border:1px solid var(--border);
+  padding:6px 10px; border-radius:999px; background: transparent; color: var(--muted);
+  font-size: .9rem;
+}
+
+.grid {
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: var(--card-gap);
+}
+@media (min-width: 680px){ .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 980px){ .grid { grid-template-columns: repeat(3, 1fr); } }
+
+.card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+.card h3 { margin: 0 0 6px; font-size: 1.1rem; }
+.card p { margin: 0 0 12px; color: var(--muted); }
+.card a.btn {
+  display:inline-block; text-decoration:none; font-weight:600;
+  background: var(--brand);
+  color: #0B0E12;        /* dark text on magenta for contrast */
+  padding: 10px 12px; border-radius: 12px;
+}
+.card a.btn:hover { background: var(--brand-2); }
+
+footer.site {
+  margin: 24px 0 40px; color: var(--muted); font-size: .95rem;
+  border-top:1px solid var(--border); padding-top: 16px;
+}
+
+/* Form & tool UI basics */
+input[type="file"], input[type="number"], input[type="text"], textarea, select, .out {
+  width: 100%;
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+}
+label { display:block; margin: 10px 0 6px; color: var(--muted); }
+button, .button {
+  background: var(--brand);
+  color: #0B0E12;        /* readable on brand background */
+  border:0; border-radius:12px;
+  padding: 10px 14px; font-weight:700; cursor:pointer;
+}
+button:hover, .button:hover { background: var(--brand-2); }
+button.secondary { background: transparent; color: var(--text); border:1px solid var(--border); }
+.small { font-size: .9rem; color: var(--muted); }
+
+/* Utility */
+.stack { display:flex; gap: 10px; flex-wrap: wrap; align-items:center; }
+.section { background: var(--bg-elev); border:1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
