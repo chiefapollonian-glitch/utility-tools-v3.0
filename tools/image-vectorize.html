@@ -6,8 +6,11 @@
 <link rel="icon" href="../assets/favicon.svg">
 <link rel="stylesheet" href="../assets/theme.css">
 <link rel="stylesheet" href="../assets/styles.css">
-<!-- ImageTracer (MIT) -->
-<script src="../vendor/imagetracer.min.js"></script>
+
+<!-- ImageTracer (MIT, local copy in /vendor/) -->
+<script src="../vendor/imagetracer_v1.2.6.min.js"></script>
+
+<!-- Google AdSense -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2381000819704004" crossorigin="anonymous"></script>
 </head>
 <body>
@@ -64,6 +67,11 @@ $('run').onclick = async () => {
   };
 
   // Vectorize
+  if (!window.ImageTracer) {
+    alert("ImageTracer library failed to load. Check vendor folder.");
+    return;
+  }
+
   ImageTracer.imageToSVG(
     dataUrl,
     svgstr => {
