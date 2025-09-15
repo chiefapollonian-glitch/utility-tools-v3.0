@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Image Upscaler — 2× / 4×</title>
+<link rel="icon" href="../assets/favicon.svg">
+<link rel="stylesheet" href="../assets/theme.css">
+<link rel="stylesheet" href="../assets/styles.css">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2381000819704004" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="container">
+  <header class="site"><a class="brand" href="../index.html">← Utility Tools</a></header>
+
+  <h1 style="font-size:var(--h2-size);margin:6px 0 10px">Image Upscaler</h1>
+  <p class="small">Lightweight 2×/4× upscaling that runs locally. Choose Smooth (photos) or Pixel-art (nearest).</p>
+
+  <div class="section">
+    <label>Choose image</label>
+    <input type="file" id="file" accept="image/*">
+
+    <div class="stack" style="margin-top:10px">
+      <label>Scale
+        <select id="scale">
+          <option value="2">2×</option>
+          <option value="4">4×</option>
+        </select>
+      </label>
+      <label>Mode
+        <select id="mode">
+          <option value="smooth">Smooth</option>
+          <option value="pixel">Pixel-art</option>
+        </select>
+      </label>
+      <label>Format
+        <select id="fmt">
+          <option value="image/webp">WEBP</option>
+          <option value="image/jpeg">JPEG</option>
+          <option value="image/png">PNG</option>
+        </select>
+      </label>
+      <label>Quality <input id="q" type="range" min="0.6" max="0.95" step="0.05" value="0.9"></label>
+    </div>
+
+    <div class="stack" style="margin-top:12px">
+      <button id="run">Upscale</button>
+      <a id="dl" class="button secondary hidden" download>Download</a>
+    </div>
+
+    <p id="info" class="small"></p>
+    <img id="preview" style="max-width:100%;margin-top:10px" alt="">
+  </div>
+
+  <footer class="site"><a href="../index.html">← Back to tools</a></footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+$('file').onchange = ()=> { const f=$('file').files?.[0]; if(f) $('preview').src = URL.createObjectURL(f); };
+
+$('run').onclick = async () => {
+  const file = $('file').files?.[0]; if(!file) return alert('Choose an image');
+  const bmp = await createImageBitmap(file);
+  const scale = parseInt($('scale').value||2);
+  const W = bmp.width*scale, H = bmp.height*scale;
+
+  const c = document.createElement('canvas'); c.width=W; c.height=H;
+  const x = c.getContext('2d');
+  const smooth = ($('mode').value==='smooth');
+  x.imageSmoothingEnabled = smooth;
+  x.imageSmoothingQuality = smooth ? 'high' : 'low';
+  if(!smooth){ // nearest-neighbour trick for pixel art
+    // draw via temp canvas at integer scale to preserve hard edges
+    const t = document.createElement('canvas'); t.width=bmp.width; t.height=bmp.height;
+    t.getContext('2d').drawImage(bmp,0,0);
+    x.imageSmoothingEnabled = false;
+    x.drawImage(t, 0, 0, W, H);
+  } else {
+    x.drawImage(bmp, 0, 0, W, H);
+  }
+
+  const mime = $('fmt').value;
+  const blob = await new Promise(r=>c.toBlob(r, mime, parseFloat($('q').value)));
+  const a = $('dl');
+  const ext = mime==='image/png'?'png':(mime==='image/webp'?'webp':'jpg');
+  a.href = URL.createObjectURL(blob);
+  a.download = (file.name.replace(/\.[^.]+$/, '') + `_x${scale}.`+ext);
+  a.classList.remove('hidden');
+  $('info').textContent = `Upscaled to ${W}×${H} (${scale}×)`;
+};
+</script>
+
+<!-- Bottom Ad (optional) -->
+<section style="margin:30px 0; text-align:center;">
+  <ins class="adsbygoogle" style="display:block"
+       data-ad-client="ca-pub-2381000819704004"
+       data-ad-slot="YOUR_SLOT_ID"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</section>
+</body>
+</html>
