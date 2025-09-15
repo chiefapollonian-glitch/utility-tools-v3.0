@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Image Resizer — fast & private</title>
+<link rel="icon" href="../assets/favicon.svg">
+<link rel="stylesheet" href="../assets/theme.css">
+<link rel="stylesheet" href="../assets/styles.css">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2381000819704004" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="container">
+  <header class="site"><a class="brand" href="../index.html">← Utility Tools</a></header>
+
+  <h1 style="font-size:var(--h2-size);margin:6px 0 10px">Image Resizer</h1>
+  <p class="small">Resize images locally in your browser. Nothing uploads.</p>
+
+  <div class="section">
+    <label>Choose image</label>
+    <input type="file" id="file" accept="image/*">
+
+    <div class="stack" style="margin-top:10px">
+      <label>Width (px) <input id="w" type="number" min="1" style="width:110px"></label>
+      <label>Height (px) <input id="h" type="number" min="1" style="width:110px"></label>
+      <label><input type="checkbox" id="lock" checked> Keep aspect</label>
+      <label>Format
+        <select id="fmt">
+          <option value="image/jpeg">JPEG</option>
+          <option value="image/png">PNG</option>
+          <option value="image/webp">WEBP</option>
+        </select>
+      </label>
+      <label>Quality (JPEG/WEBP) <input id="q" type="range" min="0.5" max="0.95" step="0.05" value="0.85"></label>
+      <label>Sampling
+        <select id="sampling">
+          <option value="smooth" selected>Smooth</option>
+          <option value="pixel">Pixel-art (nearest)</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="stack" style="margin-top:12px">
+      <button id="run">Resize</button>
+      <a id="dl" class="button secondary hidden" download>Download</a>
+    </div>
+
+    <p id="info" class="small"></p>
+    <img id="preview" style="max-width:100%;margin-top:10px" alt="">
+  </div>
+
+  <footer class="site"><a href="../index.html">← Back to tools</a></footer>
+</div>
+
+<script>
+const el = id => document.getElementById(id);
+const f=el('file'), w=el('w'), h=el('h'), lock=el('lock'), fmt=el('fmt'), q=el('q'), sampling=el('sampling');
+
+f.onchange = async () => {
+  const file = f.files?.[0]; if(!file) return;
+  const bmp = await createImageBitmap(file);
+  w.value = bmp.width; h.value = bmp.height;
+  el('preview').src = URL.createObjectURL(file);
+};
+
+w.oninput = ()=> { if(lock.checked && f.files[0]) syncAspect('w'); };
+h.oninput = ()=> { if(lock.checked && f.files[0]) syncAspect('h'); };
+
+async function syncAspect(changed){
+  const file = f.files?.[0]; if(!file) return;
+  const bmp = await createImageBitmap(file);
+  const ratio = bmp.width / bmp.height;
+  if(changed==='w'){ h.value = Math.round(w.value/ratio); }
+  else { w.value = Math.round(h.value*ratio); }
+}
+
+el('run').onclick = async () => {
+  if(!f.files[0]) return alert('Choose an image');
+  const file = f.files[0];
+  const bmp = await createImageBitmap(file);
+  const W = Math.max(1, parseInt(w.value||bmp.width));
+  const H = Math.max(1, parseInt(h.value||bmp.height));
+
+  const c = document.createElement('canvas'); c.width=W; c.height=H;
+  const x = c.getContext('2d');
+  const smooth = (sampling.value==='smooth');
+  x.imageSmoothingEnabled = smooth;
+  x.imageSmoothingQuality = smooth ? 'high' : 'low';
+  x.drawImage(bmp, 0, 0, W, H);
+
+  const quality = parseFloat(q.value);
+  const mime = fmt.value;
+  const blob = await new Promise(r => c.toBlob(r, mime, quality));
+  const ext = mime==='image/png'?'png':(mime==='image/webp'?'webp':'jpg');
+
+  const a = el('dl');
+  a.href = URL.createObjectURL(blob);
+  a.download = (file.name.replace(/\.[^.]+$/, '') + `_${W}x${H}.`+ext);
+  a.classList.remove('hidden');
+
+  const kb = s => (s/1024).toFixed(1)+' KB';
+  el('info').textContent = `Original ${kb(file.size)} → New ${kb(blob.size||0)} (${W}×${H})`;
+};
+</script>
+
+<!-- Bottom Ad (optional, add your slot id) -->
+<section style="margin:30px 0; text-align:center;">
+  <ins class="adsbygoogle" style="display:block"
+       data-ad-client="ca-pub-2381000819704004"
+       data-ad-slot="YOUR_SLOT_ID"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</section>
+</body>
+</html>
