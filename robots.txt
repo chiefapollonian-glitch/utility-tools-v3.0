@@ -1,0 +1,3 @@
+User-agent: *
+Disallow:
+Sitemap: https://tools.apollonianeye.uk/sitemap.xml
