@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- Root pages -->
+  <url>
+    <loc>https://tools.apollonianeye.uk/</loc>
+    <lastmod>2025-09-16</lastmod>
+  </url>
+  <url>
+    <loc>https://tools.apollonianeye.uk/about.html</loc>
+    <lastmod>2025-09-16</lastmod>
+  </url>
+  <url>
+    <loc>https://tools.apollonianeye.uk/privacy.html</loc>
+    <lastmod>2025-09-16</lastmod>
+  </url>
+
+  <!-- Tools -->
+  <url><loc>https://tools.apollonianeye.uk/tools/audio-convert.html</loc><lastmod>2025-09-16</lastmod></url>
+  <url><loc>https://tools.apollonianeye.uk/tools/audio-trim.html</loc><lastmod>2025-09-16</lastmod></url>
+  <url><loc>https://tools.apollonianeye.uk/tools/csv-json.html</loc><lastmod>2025-09-16</lastmod></url>
+  <url><loc>https://tools.apollonianeye.uk/tools/gothic-fraktur.html</loc><lastmod>2025-09-16</lastmod></url>
+  <url><loc>https://tools.apollonianeye.uk/tools/image-convert.html</loc><lastmod>2025-09-16</lastmod></url>
+  <url><loc>https://tools.apollonianeye.uk/tools/image-resize.html</loc><lastmod>2025-09-16</lastmod></url>
+  <url><loc>https://tools.apollonianeye.uk/tools/image-upscale.html</loc><lastmod>2025-09-16</lastmod></url>
+  <url><loc>https://tools.apollonianeye.uk/tools/image-vectorize.html</loc><lastmod>2025-09-16</lastmod></url>
+  <url><loc>https://tools.apollonianeye.uk/tools/pdf-merge.html</loc><lastmod>2025-09-16</lastmod></url>
+  <url><loc>https://tools.apollonianeye.uk/tools/small-caps.html</loc><lastmod>2025-09-16</lastmod></url>
+  <url><loc>https://tools.apollonianeye.uk/tools/typewriter.html</loc><lastmod>2025-09-16</lastmod></url>
+  <url><loc>https://tools.apollonianeye.uk/tools/video-convert.html</loc><lastmod>2025-09-16</lastmod></url>
+  <url><loc>https://tools.apollonianeye.uk/tools/video-to-audio.html</loc><lastmod>2025-09-16</lastmod></url>
+
+</urlset>
