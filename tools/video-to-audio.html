@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Video → Audio (MP3 / WAV / M4A / OGG)</title>
+<link rel="icon" href="../assets/favicon.svg">
+<link rel="stylesheet" href="../assets/theme.css">
+<link rel="stylesheet" href="../assets/styles.css">
+
+<!-- Try local ffmpeg.wasm first (if you already ship it), then CDN fallback -->
+<script src="../vendor/ffmpeg.min.js"></script>
+<script>
+  if (!window.FFmpeg) {
+    var s=document.createElement('script');
+    s.src='https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js';
+    document.head.appendChild(s);
+  }
+</script>
+
+<!-- AdSense -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2381000819704004" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="container">
+  <header class="site"><a class="brand" href="../index.html">← Utility Tools</a></header>
+
+  <h1 style="font-size:var(--h2-size);margin:6px 0 10px">Extract audio from video</h1>
+  <p class="small">Runs locally in your browser. Nothing uploads.</p>
+
+  <div class="section">
+    <label>Choose video</label>
+    <input type="file" id="file" accept="video/*">
+
+    <div class="stack" style="margin-top:10px">
+      <label>Format
+        <select id="format">
+          <option value="mp3">MP3 (192 kbps)</option>
+          <option value="wav">WAV (PCM 16-bit)</option>
+          <option value="m4a">M4A (AAC, try stream copy)</option>
+          <option value="ogg">OGG (Opus 128 kbps)</option>
+        </select>
+      </label>
+      <label>Start (sec) <input id="start" type="number" min="0" value="0" style="width:100px"></label>
+      <label>Duration (sec) <input id="dur" type="number" min="0" placeholder="optional" style="width:120px"></label>
+    </div>
+
+    <div class="stack" style="margin-top:12px">
+      <button id="run">Extract</button>
+      <a id="dl" class="button secondary hidden" download>Download</a>
+    </div>
+
+    <pre id="log" class="out" style="margin-top:12px;height:150px;overflow:auto;white-space:pre-wrap"></pre>
+  </div>
+
+  <footer class="site"><a href="../index.html">← Back to tools</a></footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const log = msg => { const l=$('log'); l.textContent += msg + '\n'; l.scrollTop = l.scrollHeight; };
+
+let ffmpeg, coreReady = false;
+
+async function loadFFmpeg() {
+  if (coreReady) return;
+  // ensure FFmpeg global is present (from local or CDN)
+  await new Promise(r => {
+    if (window.FFmpeg) return r();
+    const check = setInterval(()=>{ if (window.FFmpeg) { clearInterval(check); r(); } }, 50);
+  });
+
+  const { createFFmpeg, fetchFile } = FFmpeg;
+  ffmpeg = createFFmpeg({
+    corePath: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js',
+    log: true,
+  });
+  log('Loading FFmpeg core… (~25–30 MB, once per session)');
+  await ffmpeg.load();
+  coreReady = true;
+  log('FFmpeg ready.');
+}
+
+$('run').onclick = async () => {
+  const file = $('file').files?.[0];
+  if (!file) return alert('Choose a video file');
+  await loadFFmpeg();
+
+  const fmt = $('format').value;
+  const start = parseFloat($('start').value||0);
+  const dur   = parseFloat($('dur').value||0);
+  const inName = 'input.' + (file.name.split('.').pop() || 'mp4');
+  const outName = 'output.' + fmt;
+
+  // Prepare fs
+  ffmpeg.FS('writeFile', inName, await FFmpeg.fetchFile(file));
+  log(`Loaded: ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)`);
+
+  // Build args
+  const args = ['-ss', String(start)];
+  if (dur > 0) args.push('-t', String(dur));
+  args.push('-i', inName, '-vn'); // drop video
+
+  // Encoding per format (pick codecs that are commonly available in ffmpeg.wasm)
+  if (fmt === 'mp3') {
+    args.push('-ar','44100','-ac','2','-b:a','192k','-f','mp3', outName);
+  } else if (fmt === 'wav') {
+    args.push('-ar','44100','-ac','2','-c:a','pcm_s16le','-f','wav', outName);
+  } else if (fmt === 'm4a') {
+    // Try to stream-copy AAC if possible; else encode AAC.
+    // First attempt: copy
+    try {
+      log('Trying stream copy to M4A (fast)…');
+      await ffmpeg.run(...['-ss', String(start)].concat(dur>0?['-t',String(dur)]:[]).concat(['-i', inName, '-vn', '-c:a', 'copy', '-movflags', '+faststart', outName]));
+    } catch(e) {
+      log('Copy failed, encoding AAC…');
+      await ffmpeg.run(...args.concat(['-c:a','aac','-b:a','192k','-movflags','+faststart', outName]));
+    }
+  } else if (fmt === 'ogg') {
+    args.push('-c:a','libopus','-b:a','128k','-f','ogg', outName);
+  }
+
+  if (fmt !== 'm4a') {
+    // For non-M4A paths we still need to run if not already executed
+    try {
+      await ffmpeg.run(...args);
+    } catch (e) {
+      log('FFmpeg error:\n' + e.message);
+      alert('Conversion failed. Try a different format (WAV works on all builds).');
+      return;
+    }
+  }
+
+  const data = ffmpeg.FS('readFile', outName);
+  const blob = new Blob([data.buffer], { type: ({
+    mp3:'audio/mpeg', wav:'audio/wav', m4a:'audio/mp4', ogg:'audio/ogg'
+  })[fmt] || 'application/octet-stream' });
+
+  const a = $('dl');
+  a.href = URL.createObjectURL(blob);
+  a.download = (file.name.replace(/\.[^.]+$/, '') + '.' + fmt);
+  a.classList.remove('hidden');
+  log('Done. Ready to download.');
+};
+</script>
+
+<!-- Bottom Ad (optional) -->
+<section style="margin:30px 0; text-align:center;">
+  <ins class="adsbygoogle" style="display:block"
+       data-ad-client="ca-pub-2381000819704004"
+       data-ad-slot="YOUR_SLOT_ID"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</section>
+</body>
+</html>
