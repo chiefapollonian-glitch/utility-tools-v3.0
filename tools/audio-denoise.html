@@ -7,15 +7,8 @@
   <link rel="stylesheet" href="../assets/theme.css">
   <link rel="stylesheet" href="../assets/styles.css">
 
-  <!-- ffmpeg.wasm: try local first, then CDN fallback -->
-  <script src="../vendor/ffmpeg.min.js"></script>
-  <script>
-    if (!window.FFmpeg) {
-      var s=document.createElement('script');
-      s.src='https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js';
-      document.head.appendChild(s);
-    }
-  </script>
+  <!-- FFmpeg.wasm via CDN (wrapper) -->
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
 
   <!-- AdSense (ok to keep in head; actual ad slots go in body when approved) -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2381000819704004" crossorigin="anonymous"></script>
@@ -81,6 +74,7 @@ let ffmpeg, coreReady=false, abortCtrl={aborted:false};
 
 async function loadFFmpeg() {
   if (coreReady) return;
+  // Ensure FFmpeg global exists (loaded from CDN in <head>)
   await new Promise(r=>{
     if (window.FFmpeg) return r();
     const iv=setInterval(()=>{ if (window.FFmpeg){ clearInterval(iv); r(); } }, 50);
@@ -88,7 +82,8 @@ async function loadFFmpeg() {
   const { createFFmpeg } = FFmpeg;
   ffmpeg = createFFmpeg({
     log: false,
-    corePath: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js'
+    // IMPORTANT: point to jsDelivr core; it will fetch the .wasm and worker from same folder
+    corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js'
   });
   $('status').textContent = 'Loading engine… (~25–30 MB on first use)';
   await ffmpeg.load();
