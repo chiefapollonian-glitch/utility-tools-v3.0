@@ -7,8 +7,12 @@
   <link rel="stylesheet" href="../assets/theme.css">
   <link rel="stylesheet" href="../assets/styles.css">
 
-  <!-- FFmpeg.wasm wrapper (exposes window.FFmpeg) -->
-  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
+  <!-- FFmpeg.wasm wrapper via ESM (reliable) -->
+  <script type="module">
+    import { createFFmpeg, fetchFile } from "https://esm.sh/@ffmpeg/ffmpeg@0.12.6";
+    // expose globally so the rest of the page can use it
+    window.FFmpeg = { createFFmpeg, fetchFile };
+  </script>
 
   <!-- AdSense loader (fine to keep in <head>) -->
   <meta name="google-adsense-account" content="ca-pub-2381000819704004">
@@ -80,20 +84,19 @@ function buildFilter(nf, tn){ return `afftdn=nf=${nf}:tn=${tn?1:0}`; }
 async function loadFFmpeg() {
   if (coreReady) return;
 
-  // wait until the wrapper script has populated window.FFmpeg
+  // Wait until the ESM loader has set window.FFmpeg
   await new Promise((res,rej)=>{
     let tries=0;
     const iv=setInterval(()=>{
-      if (window.FFmpeg) { clearInterval(iv); res(); }
-      if (++tries>300){ clearInterval(iv); rej(new Error('FFmpeg loader not found.')); }
+      if (window.FFmpeg && window.FFmpeg.createFFmpeg) { clearInterval(iv); res(); }
+      if (++tries>200){ clearInterval(iv); rej(new Error('FFmpeg loader not found.')); }
     }, 50);
   });
 
-  // IMPORTANT: call from the FFmpeg namespace
   ffmpeg = FFmpeg.createFFmpeg({
     log: false,
-    // The corePath points to the jsDelivr package that includes ffmpeg-core.js/.wasm/.worker
-    corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js'
+    // Keep all core assets on the same CDN folder as ffmpeg-core.js
+    corePath: 'https://esm.sh/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js'
   });
 
   $('status').textContent = 'Loading engine… (~25–30 MB on first use)';
