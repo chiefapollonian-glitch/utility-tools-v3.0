@@ -7,37 +7,11 @@
   <link rel="stylesheet" href="../assets/theme.css">
   <link rel="stylesheet" href="../assets/styles.css">
 
-  <!-- Robust FFmpeg loader: jsDelivr → esm.sh (polyfill) -->
-  <script>
-    // Loads the FFmpeg wrapper and ensures window.FFmpeg exists.
-    window.loadFFmpegWrapper = async function () {
-      if (window.FFmpeg) return true;
+  <!-- FFmpeg.wasm wrapper (exposes window.FFmpeg) -->
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
 
-      // Try UMD wrapper from jsDelivr (sets window.FFmpeg)
-      try {
-        await new Promise((res, rej) => {
-          const s = document.createElement('script');
-          s.src = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js';
-          s.async = true;
-          s.onload = res; s.onerror = rej;
-          document.head.appendChild(s);
-        });
-        return !!window.FFmpeg;
-      } catch (err1) {
-        // Fallback: ESM build via esm.sh → polyfill window.FFmpeg
-        try {
-          const mod = await import('https://esm.sh/@ffmpeg/ffmpeg@0.12.6');
-          window.FFmpeg = { createFFmpeg: mod.createFFmpeg, fetchFile: mod.fetchFile };
-          return true;
-        } catch (err2) {
-          console.error('Failed to load FFmpeg wrapper from both CDNs:', err1, err2);
-          return false;
-        }
-      }
-    };
-  </script>
-
-  <!-- AdSense (ok to keep in head; actual ad slots go in body when approved) -->
+  <!-- AdSense loader (fine to keep in <head>) -->
+  <meta name="google-adsense-account" content="ca-pub-2381000819704004">
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2381000819704004" crossorigin="anonymous"></script>
 </head>
 <body>
@@ -47,8 +21,7 @@
   <h1 style="font-size:var(--h2-size);margin:6px 0 10px">Audio Denoise</h1>
   <p class="small">
     Remove steady background hiss/room noise locally in your browser. Works with audio files and videos.
-    For videos, this will replace the soundtrack with a denoised one while copying the original video
-    (fast, no re-encode).
+    For videos, this replaces the soundtrack with a denoised one while copying the original video (fast, no re-encode).
   </p>
 
   <div class="section">
@@ -84,9 +57,9 @@
       <details>
         <summary>Tips</summary>
         <ul>
-          <li>Start at <code>-25 dB</code>. More negative = stronger reduction (but may add artifacts).</li>
-          <li><em>Voice focus</em> enables temporal smoothing (<code>tn=1</code>) that helps speech.</li>
-          <li>For hum (50/60 Hz), consider a gentle high-pass filter afterwards in a DAW.</li>
+          <li>Start at <code>-25 dB</code>. More negative = stronger reduction (can add artifacts).</li>
+          <li><em>Voice focus</em> enables temporal smoothing (<code>tn=1</code>) helpful for speech.</li>
+          <li>For electrical hum (50/60 Hz), you may add a high-pass later in a DAW.</li>
         </ul>
       </details>
     </div>
@@ -99,54 +72,42 @@
 const $ = id => document.getElementById(id);
 let ffmpeg, coreReady=false, abortCtrl={aborted:false};
 
+function isVideoFilename(name){ return /\.(mp4|mov|mkv|webm|avi|m4v|ts|m2ts|wmv)$/i.test(name||''); }
+function extOf(name, def='dat'){ const m=name.match(/\.([^.]+)$/); return m?m[1].toLowerCase():def; }
+function baseName(name){ return name.replace(/\.[^.]+$/,''); }
+function buildFilter(nf, tn){ return `afftdn=nf=${nf}:tn=${tn?1:0}`; }
+
 async function loadFFmpeg() {
   if (coreReady) return;
 
-  // Ensure wrapper is available
-  const ok = await window.loadFFmpegWrapper();
-  if (!ok || !window.FFmpeg) {
-    $('status').textContent = 'Could not load FFmpeg library (CDNs blocked).';
-    throw new Error('FFmpeg wrapper not available');
-  }
-  const { createFFmpeg } = FFmpeg;
+  // wait until the wrapper script has populated window.FFmpeg
+  await new Promise((res,rej)=>{
+    let tries=0;
+    const iv=setInterval(()=>{
+      if (window.FFmpeg) { clearInterval(iv); res(); }
+      if (++tries>300){ clearInterval(iv); rej(new Error('FFmpeg loader not found.')); }
+    }, 50);
+  });
 
-  // Try multiple core paths (UMD) so .wasm/.worker match the folder
-  const corePaths = [
-    'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js',
-    'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js'
-  ];
+  // IMPORTANT: call from the FFmpeg namespace
+  ffmpeg = FFmpeg.createFFmpeg({
+    log: false,
+    // The corePath points to the jsDelivr package that includes ffmpeg-core.js/.wasm/.worker
+    corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js'
+  });
 
-  let lastErr;
-  for (const corePath of corePaths) {
-    try {
-      ffmpeg = createFFmpeg({ log: false, corePath });
-      $('status').textContent = 'Loading engine… (~25–30 MB on first use)';
-      await ffmpeg.load();
-      coreReady = true;
-      $('status').textContent = 'Ready.';
-      return;
-    } catch (e) {
-      lastErr = e;
-      console.warn('FFmpeg core failed at', corePath, e);
-    }
-  }
-  $('status').textContent = 'Failed to load FFmpeg core from all sources.';
-  console.error(lastErr);
-  throw lastErr;
+  $('status').textContent = 'Loading engine… (~25–30 MB on first use)';
+  await ffmpeg.load();
+  coreReady = true;
+  $('status').textContent = 'Ready.';
 }
 
 $('cancel').onclick = ()=>{ abortCtrl.aborted=true; $('status').textContent='Cancelled.'; };
 
-function extOf(name, def='dat'){ const m=name.match(/\.([^.]+)$/); return m?m[1].toLowerCase():def; }
-function baseName(name){ return name.replace(/\.[^.]+$/,''); }
-function isVideoFilename(name){ return /\.(mp4|mov|mkv|webm|avi|m4v|ts|m2ts|wmv)$/i.test(name||''); }
-
-function buildFilter(nf, tn){ return `afftdn=nf=${nf}:tn=${tn?1:0}`; }
-
 async function runWithCancel(args){
   const runP = ffmpeg.run(...args);
   const cancelP = new Promise((_,rej)=>{
-    const iv=setInterval(()=>{ if (abortCtrl.aborted){ clearInterval(iv); rej(new Error('cancelled')); } },120);
+    const iv=setInterval(()=>{ if (abortCtrl.aborted){ clearInterval(iv); rej(new Error('cancelled')); } }, 120);
   });
   return Promise.race([runP, cancelP]);
 }
@@ -158,6 +119,7 @@ $('run').onclick = async () => {
     if (!file) return alert('Choose an audio or video file');
 
     await loadFFmpeg();
+
     $('prog').style.display='block'; $('prog').value=0;
     ffmpeg.setProgress(({ratio})=>{ $('prog').value = Math.round((ratio||0)*100); });
 
@@ -175,40 +137,41 @@ $('run').onclick = async () => {
     if (mode === 'audio-wav' || mode === 'audio-mp3') {
       const outName = (mode==='audio-wav') ? 'out.wav' : 'out.mp3';
       const args = ['-i', inName, '-vn', '-af', filter];
+
       if (mode==='audio-wav') {
         args.push('-c:a','pcm_s16le', outName);
       } else {
         args.push('-c:a','libmp3lame','-b:a','192k', outName);
       }
-      try { await runWithCancel(args); }
-      catch(e){ if(e.message!=='cancelled') throw e; }
+
+      try { await runWithCancel(args); } catch(e){ if(e.message!=='cancelled') throw e; }
 
       if (!ffmpeg.FS('readdir','/').includes(outName)) {
         if (mode==='audio-mp3') {
+          // fallback to WAV if mp3 encoder unavailable
           await runWithCancel(['-i', inName, '-vn', '-af', filter, '-c:a','pcm_s16le','out.wav']);
           const buf = ffmpeg.FS('readFile','out.wav');
-          const blob = new Blob([buf.buffer], {type:'audio/wav'});
-          const url = URL.createObjectURL(blob);
+          const url = URL.createObjectURL(new Blob([buf.buffer], {type:'audio/wav'}));
           const a=$('dl'); a.href=url; a.download=baseName(file.name)+'-denoised.wav'; a.classList.remove('hidden');
           $('status').textContent='Done (exported WAV fallback).'; $('prog').style.display='none'; return;
         }
         throw new Error('Output not created.');
       }
+
       const buf = ffmpeg.FS('readFile', outName);
       const mime = (mode==='audio-wav') ? 'audio/wav' : 'audio/mpeg';
-      const blob = new Blob([buf.buffer], {type:mime});
-      const url = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(new Blob([buf.buffer], {type:mime}));
       const a=$('dl'); a.href=url; a.download=baseName(file.name)+'-denoised.'+(mode==='audio-wav'?'wav':'mp3'); a.classList.remove('hidden');
       $('status').textContent='Done.'; $('prog').style.display='none'; return;
     }
 
+    // Video outputs: copy video stream, re-encode audio with denoise
     if (!isVideoFilename(file.name)) {
-      alert('Selected output is Video, but input seems to be audio-only. Choose an audio output, or supply a video.');
+      alert('Selected output is Video, but input looks audio-only. Choose an audio output, or supply a video.');
       $('prog').style.display='none'; return;
     }
 
     if (mode === 'video-mp4') {
-      const outName = 'out.mp4';
       try {
         await runWithCancel([
           '-i', inName,
@@ -218,57 +181,53 @@ $('run').onclick = async () => {
           '-movflags','+faststart',
           '-map','0:v?','-map','0:a:0?',
           '-shortest',
-          outName
+          'out.mp4'
         ]);
-        if (ffmpeg.FS('readdir','/').includes(outName)) {
-          const buf = ffmpeg.FS('readFile', outName);
-          const blob = new Blob([buf.buffer], {type:'video/mp4'});
-          const url = URL.createObjectURL(blob);
+        if (ffmpeg.FS('readdir','/').includes('out.mp4')) {
+          const buf = ffmpeg.FS('readFile', 'out.mp4');
+          const url = URL.createObjectURL(new Blob([buf.buffer], {type:'video/mp4'}));
           const a=$('dl'); a.href=url; a.download=baseName(file.name)+'-denoised.mp4'; a.classList.remove('hidden');
           $('status').textContent='Done.'; $('prog').style.display='none'; return;
         }
-      } catch (e) {
-        // fall through to MKV
-      }
-      $('status').textContent = 'AAC not available in this build; falling back to MKV/Opus…';
+      } catch(e){ /* fall through */ }
+      $('status').textContent = 'AAC not available; falling back to MKV/Opus…';
     }
 
-    { // MKV with Opus (high-compat in wasm)
-      const outName = 'out.mkv';
-      await runWithCancel([
-        '-i', inName,
-        '-c:v','copy',
-        '-af', filter,
-        '-c:a','libopus','-b:a','128k',
-        '-map','0:v?','-map','0:a:0?',
-        '-shortest',
-        outName
-      ]);
-      if (!ffmpeg.FS('readdir','/').includes(outName)) throw new Error('Output not created.');
-      const buf = ffmpeg.FS('readFile', outName);
-      const blob = new Blob([buf.buffer], {type:'video/x-matroska'});
-      const url = URL.createObjectURL(blob);
+    // MKV with Opus (most reliable in wasm)
+    await runWithCancel([
+      '-i', inName,
+      '-c:v','copy',
+      '-af', filter,
+      '-c:a','libopus','-b:a','128k',
+      '-map','0:v?','-map','0:a:0?',
+      '-shortest',
+      'out.mkv'
+    ]);
+    if (!ffmpeg.FS('readdir','/').includes('out.mkv')) throw new Error('Output not created.');
+    {
+      const buf = ffmpeg.FS('readFile', 'out.mkv');
+      const url = URL.createObjectURL(new Blob([buf.buffer], {type:'video/x-matroska'}));
       const a=$('dl'); a.href=url; a.download=baseName(file.name)+'-denoised.mkv'; a.classList.remove('hidden');
       $('status').textContent='Done.'; $('prog').style.display='none'; return;
     }
 
   } catch (e) {
     if (e && e.message==='cancelled') return;
-    $('status').textContent = (e && e.message)? e.message : 'Error. Try different settings or shorter input.';
+    $('status').textContent = (e && e.message)? e.message : 'Error. Try different settings or a shorter input.';
     $('prog').style.display='none';
     console.error(e);
   }
 };
 </script>
 
-<!-- Optional bottom ad slot -->
+<!-- Bottom AdSense slot (optional) -->
 <section style="margin:30px 0; text-align:center;">
   <ins class="adsbygoogle" style="display:block"
        data-ad-client="ca-pub-2381000819704004"
        data-ad-slot="YOUR_SLOT_ID"
        data-ad-format="auto"
        data-full-width-responsive="true"></ins>
-  <script>(window.adsbygoogle = window.adsbygoogle || []).push({});</script>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
 </section>
 </body>
 </html>
