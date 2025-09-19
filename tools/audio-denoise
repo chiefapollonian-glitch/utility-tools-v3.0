@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Audio Denoise (Noise Remover) — Audio & Video</title>
+  <link rel="icon" href="../assets/favicon.svg">
+  <link rel="stylesheet" href="../assets/theme.css">
+  <link rel="stylesheet" href="../assets/styles.css">
+
+  <!-- ffmpeg.wasm: try local first, then CDN fallback -->
+  <script src="../vendor/ffmpeg.min.js"></script>
+  <script>
+    if (!window.FFmpeg) {
+      var s=document.createElement('script');
+      s.src='https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js';
+      document.head.appendChild(s);
+    }
+  </script>
+
+  <!-- AdSense (ok to keep in head; actual ad slots go in body when approved) -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2381000819704004" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="container">
+  <header class="site"><a class="brand" href="../index.html">← Utility Tools</a></header>
+
+  <h1 style="font-size:var(--h2-size);margin:6px 0 10px">Audio Denoise</h1>
+  <p class="small">
+    Remove steady background hiss/room noise locally in your browser. Works with audio files and videos.
+    For videos, this will replace the soundtrack with a denoised one while copying the original video
+    (fast, no re-encode).
+  </p>
+
+  <div class="section">
+    <label>Choose file (audio or video)</label>
+    <input type="file" id="file" accept="audio/*,video/*">
+
+    <div class="stack" style="margin-top:10px">
+      <label>Strength (dB)
+        <input id="nf" type="range" min="-40" max="-10" step="1" value="-25" style="width:220px">
+      </label>
+      <label><input type="checkbox" id="voice"> Voice focus (smoother speech)</label>
+
+      <label>Output
+        <select id="mode">
+          <option value="audio-wav">Audio (WAV)</option>
+          <option value="audio-mp3">Audio (MP3)</option>
+          <option value="video-mp4">Video (MP4, try AAC)</option>
+          <option value="video-mkv">Video (MKV, Opus)</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="stack" style="margin-top:12px">
+      <button id="run">Denoise</button>
+      <button id="cancel" class="secondary">Cancel</button>
+      <a id="dl" class="button secondary hidden" download>Download</a>
+    </div>
+
+    <p id="status" class="small" style="margin-top:8px;color:var(--muted)"></p>
+    <progress id="prog" max="100" value="0" style="width:100%;display:none"></progress>
+
+    <div class="section small">
+      <details>
+        <summary>Tips</summary>
+        <ul>
+          <li>Start at <code>-25 dB</code>. More negative = stronger reduction (but may add artifacts).</li>
+          <li><em>Voice focus</em> enables temporal smoothing (<code>tn=1</code>) that helps speech.</li>
+          <li>For hum (50/60 Hz), consider a gentle high-pass filter afterwards in a DAW.</li>
+        </ul>
+      </details>
+    </div>
+  </div>
+
+  <footer class="site"><a href="../index.html">← Back to tools</a></footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let ffmpeg, coreReady=false, abortCtrl={aborted:false};
+
+async function loadFFmpeg() {
+  if (coreReady) return;
+  await new Promise(r=>{
+    if (window.FFmpeg) return r();
+    const iv=setInterval(()=>{ if (window.FFmpeg){ clearInterval(iv); r(); } }, 50);
+  });
+  const { createFFmpeg } = FFmpeg;
+  ffmpeg = createFFmpeg({
+    log: false,
+    corePath: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js'
+  });
+  $('status').textContent = 'Loading engine… (~25–30 MB on first use)';
+  await ffmpeg.load();
+  coreReady = true;
+  $('status').textContent = 'Ready.';
+}
+
+$('cancel').onclick = ()=>{ abortCtrl.aborted=true; $('status').textContent='Cancelled.'; };
+
+function extOf(name, def='dat'){ const m=name.match(/\.([^.]+)$/); return m?m[1].toLowerCase():def; }
+function baseName(name){ return name.replace(/\.[^.]+$/,''); }
+function isVideoFilename(name){ return /\.(mp4|mov|mkv|webm|avi|m4v|ts|m2ts|wmv)$/i.test(name||''); }
+
+function buildFilter(nf, tn){ return `afftdn=nf=${nf}:tn=${tn?1:0}`; }
+
+async function runWithCancel(args){
+  const runP = ffmpeg.run(...args);
+  const cancelP = new Promise((_,rej)=>{
+    const iv=setInterval(()=>{ if (abortCtrl.aborted){ clearInterval(iv); rej(new Error('cancelled')); } },120);
+  });
+  return Promise.race([runP, cancelP]);
+}
+
+$('run').onclick = async () => {
+  try {
+    abortCtrl = {aborted:false};
+    const file = $('file').files?.[0];
+    if (!file) return alert('Choose an audio or video file');
+
+    await loadFFmpeg();
+    $('prog').style.display='block'; $('prog').value=0;
+    ffmpeg.setProgress(({ratio})=>{ $('prog').value = Math.round((ratio||0)*100); });
+
+    const inExt = extOf(file.name, isVideoFilename(file.name)?'mp4':'wav');
+    const inName = 'in.'+inExt;
+    ffmpeg.FS('writeFile', inName, new Uint8Array(await file.arrayBuffer()));
+
+    const nf = parseInt($('nf').value,10);
+    const voice = $('voice').checked;
+    const mode = $('mode').value;
+    const filter = buildFilter(nf, voice);
+
+    $('status').textContent = 'Processing… (local, no uploads)';
+
+    if (mode === 'audio-wav' || mode === 'audio-mp3') {
+      // Extract + denoise to audio-only
+      const outName = (mode==='audio-wav') ? 'out.wav' : 'out.mp3';
+      const args = ['-i', inName, '-vn', '-af', filter];
+      if (mode==='audio-wav') {
+        args.push('-c:a','pcm_s16le', outName);
+      } else {
+        args.push('-c:a','libmp3lame','-b:a','192k', outName);
+      }
+      try {
+        await runWithCancel(args);
+      } catch(e){ if(e.message!=='cancelled') throw e; }
+
+      if (!ffmpeg.FS('readdir','/').includes(outName)) {
+        if (mode==='audio-mp3') {
+          // Fallback: WAV if mp3 encoder not present
+          await runWithCancel(['-i', inName, '-vn', '-af', filter, '-c:a','pcm_s16le','out.wav']);
+          const buf = ffmpeg.FS('readFile','out.wav');
+          const blob = new Blob([buf.buffer], {type:'audio/wav'});
+          const url = URL.createObjectURL(blob);
+          const a=$('dl'); a.href=url; a.download=baseName(file.name)+'-denoised.wav'; a.classList.remove('hidden');
+          $('status').textContent='Done (exported WAV fallback).'; $('prog').style.display='none'; return;
+        }
+        throw new Error('Output not created.');
+      }
+      const buf = ffmpeg.FS('readFile', outName);
+      const mime = (mode==='audio-wav') ? 'audio/wav' : 'audio/mpeg';
+      const blob = new Blob([buf.buffer], {type:mime});
+      const url = URL.createObjectURL(blob);
+      const a=$('dl'); a.href=url; a.download=baseName(file.name)+'-denoised.'+(mode==='audio-wav'?'wav':'mp3'); a.classList.remove('hidden');
+      $('status').textContent='Done.'; $('prog').style.display='none'; return;
+    }
+
+    // Video modes: replace audio with denoised audio, copy video stream
+    if (!isVideoFilename(file.name)) {
+      alert('Selected output is Video, but input seems to be audio-only. Choose an audio output, or supply a video.');
+      $('prog').style.display='none'; return;
+    }
+
+    if (mode === 'video-mp4') {
+      // Try MP4 with copied video + AAC audio
+      const outName = 'out.mp4';
+      try {
+        await runWithCancel([
+          '-i', inName,
+          '-c:v','copy',
+          '-af', filter,
+          '-c:a','aac','-b:a','192k',
+          '-movflags','+faststart',
+          '-map','0:v?','-map','0:a:0?',
+          '-shortest',
+          outName
+        ]);
+        if (ffmpeg.FS('readdir','/').includes(outName)) {
+          const buf = ffmpeg.FS('readFile', outName);
+          const blob = new Blob([buf.buffer], {type:'video/mp4'});
+          const url = URL.createObjectURL(blob);
+          const a=$('dl'); a.href=url; a.download=baseName(file.name)+'-denoised.mp4'; a.classList.remove('hidden');
+          $('status').textContent='Done.'; $('prog').style.display='none'; return;
+        }
+      } catch (e) {
+        // fallthrough to MKV path
+      }
+      $('status').textContent = 'AAC not available in this build; falling back to MKV/Opus…';
+      // fall through to MKV path
+    }
+
+    // MKV with Opus audio (very compatible in ffmpeg.wasm)
+    {
+      const outName = 'out.mkv';
+      await runWithCancel([
+        '-i', inName,
+        '-c:v','copy',
+        '-af', filter,
+        '-c:a','libopus','-b:a','128k',
+        '-map','0:v?','-map','0:a:0?',
+        '-shortest',
+        outName
+      ]);
+      if (!ffmpeg.FS('readdir','/').includes(outName)) throw new Error('Output not created.');
+      const buf = ffmpeg.FS('readFile', outName);
+      const blob = new Blob([buf.buffer], {type:'video/x-matroska'});
+      const url = URL.createObjectURL(blob);
+      const a=$('dl'); a.href=url; a.download=baseName(file.name)+'-denoised.mkv'; a.classList.remove('hidden');
+      $('status').textContent='Done.'; $('prog').style.display='none'; return;
+    }
+
+  } catch (e) {
+    if (e && e.message==='cancelled') return;
+    $('status').textContent = (e && e.message)? e.message : 'Error. Try different settings or shorter input.';
+    $('prog').style.display='none';
+    console.error(e);
+  }
+};
+</script>
+
+<!-- Optional bottom ad slot -->
+<section style="margin:30px 0; text-align:center;">
+  <ins class="adsbygoogle" style="display:block"
+       data-ad-client="ca-pub-2381000819704004"
+       data-ad-slot="YOUR_SLOT_ID"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</section>
+</body>
+</html>
