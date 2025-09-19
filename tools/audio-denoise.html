@@ -7,8 +7,35 @@
   <link rel="stylesheet" href="../assets/theme.css">
   <link rel="stylesheet" href="../assets/styles.css">
 
-  <!-- FFmpeg.wasm via CDN (wrapper) -->
-  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
+  <!-- Robust FFmpeg loader: jsDelivr → esm.sh (polyfill) -->
+  <script>
+    // Loads the FFmpeg wrapper and ensures window.FFmpeg exists.
+    window.loadFFmpegWrapper = async function () {
+      if (window.FFmpeg) return true;
+
+      // Try UMD wrapper from jsDelivr (sets window.FFmpeg)
+      try {
+        await new Promise((res, rej) => {
+          const s = document.createElement('script');
+          s.src = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js';
+          s.async = true;
+          s.onload = res; s.onerror = rej;
+          document.head.appendChild(s);
+        });
+        return !!window.FFmpeg;
+      } catch (err1) {
+        // Fallback: ESM build via esm.sh → polyfill window.FFmpeg
+        try {
+          const mod = await import('https://esm.sh/@ffmpeg/ffmpeg@0.12.6');
+          window.FFmpeg = { createFFmpeg: mod.createFFmpeg, fetchFile: mod.fetchFile };
+          return true;
+        } catch (err2) {
+          console.error('Failed to load FFmpeg wrapper from both CDNs:', err1, err2);
+          return false;
+        }
+      }
+    };
+  </script>
 
   <!-- AdSense (ok to keep in head; actual ad slots go in body when approved) -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2381000819704004" crossorigin="anonymous"></script>
@@ -74,21 +101,38 @@ let ffmpeg, coreReady=false, abortCtrl={aborted:false};
 
 async function loadFFmpeg() {
   if (coreReady) return;
-  // Ensure FFmpeg global exists (loaded from CDN in <head>)
-  await new Promise(r=>{
-    if (window.FFmpeg) return r();
-    const iv=setInterval(()=>{ if (window.FFmpeg){ clearInterval(iv); r(); } }, 50);
-  });
+
+  // Ensure wrapper is available
+  const ok = await window.loadFFmpegWrapper();
+  if (!ok || !window.FFmpeg) {
+    $('status').textContent = 'Could not load FFmpeg library (CDNs blocked).';
+    throw new Error('FFmpeg wrapper not available');
+  }
   const { createFFmpeg } = FFmpeg;
-  ffmpeg = createFFmpeg({
-    log: false,
-    // IMPORTANT: point to jsDelivr core; it will fetch the .wasm and worker from same folder
-    corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js'
-  });
-  $('status').textContent = 'Loading engine… (~25–30 MB on first use)';
-  await ffmpeg.load();
-  coreReady = true;
-  $('status').textContent = 'Ready.';
+
+  // Try multiple core paths (UMD) so .wasm/.worker match the folder
+  const corePaths = [
+    'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js',
+    'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js'
+  ];
+
+  let lastErr;
+  for (const corePath of corePaths) {
+    try {
+      ffmpeg = createFFmpeg({ log: false, corePath });
+      $('status').textContent = 'Loading engine… (~25–30 MB on first use)';
+      await ffmpeg.load();
+      coreReady = true;
+      $('status').textContent = 'Ready.';
+      return;
+    } catch (e) {
+      lastErr = e;
+      console.warn('FFmpeg core failed at', corePath, e);
+    }
+  }
+  $('status').textContent = 'Failed to load FFmpeg core from all sources.';
+  console.error(lastErr);
+  throw lastErr;
 }
 
 $('cancel').onclick = ()=>{ abortCtrl.aborted=true; $('status').textContent='Cancelled.'; };
@@ -129,7 +173,6 @@ $('run').onclick = async () => {
     $('status').textContent = 'Processing… (local, no uploads)';
 
     if (mode === 'audio-wav' || mode === 'audio-mp3') {
-      // Extract + denoise to audio-only
       const outName = (mode==='audio-wav') ? 'out.wav' : 'out.mp3';
       const args = ['-i', inName, '-vn', '-af', filter];
       if (mode==='audio-wav') {
@@ -137,13 +180,11 @@ $('run').onclick = async () => {
       } else {
         args.push('-c:a','libmp3lame','-b:a','192k', outName);
       }
-      try {
-        await runWithCancel(args);
-      } catch(e){ if(e.message!=='cancelled') throw e; }
+      try { await runWithCancel(args); }
+      catch(e){ if(e.message!=='cancelled') throw e; }
 
       if (!ffmpeg.FS('readdir','/').includes(outName)) {
         if (mode==='audio-mp3') {
-          // Fallback: WAV if mp3 encoder not present
           await runWithCancel(['-i', inName, '-vn', '-af', filter, '-c:a','pcm_s16le','out.wav']);
           const buf = ffmpeg.FS('readFile','out.wav');
           const blob = new Blob([buf.buffer], {type:'audio/wav'});
@@ -161,14 +202,12 @@ $('run').onclick = async () => {
       $('status').textContent='Done.'; $('prog').style.display='none'; return;
     }
 
-    // Video modes: replace audio with denoised audio, copy video stream
     if (!isVideoFilename(file.name)) {
       alert('Selected output is Video, but input seems to be audio-only. Choose an audio output, or supply a video.');
       $('prog').style.display='none'; return;
     }
 
     if (mode === 'video-mp4') {
-      // Try MP4 with copied video + AAC audio
       const outName = 'out.mp4';
       try {
         await runWithCancel([
@@ -189,14 +228,12 @@ $('run').onclick = async () => {
           $('status').textContent='Done.'; $('prog').style.display='none'; return;
         }
       } catch (e) {
-        // fallthrough to MKV path
+        // fall through to MKV
       }
       $('status').textContent = 'AAC not available in this build; falling back to MKV/Opus…';
-      // fall through to MKV path
     }
 
-    // MKV with Opus audio (very compatible in ffmpeg.wasm)
-    {
+    { // MKV with Opus (high-compat in wasm)
       const outName = 'out.mkv';
       await runWithCancel([
         '-i', inName,
@@ -231,7 +268,7 @@ $('run').onclick = async () => {
        data-ad-slot="YOUR_SLOT_ID"
        data-ad-format="auto"
        data-full-width-responsive="true"></ins>
-  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  <script>(window.adsbygoogle = window.adsbygoogle || []).push({});</script>
 </section>
 </body>
 </html>
