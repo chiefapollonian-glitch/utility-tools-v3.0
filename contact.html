@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Contact — Utility Tools</title>
+  <link rel="icon" href="assets/favicon.svg">
+  <link rel="stylesheet" href="assets/theme.css">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<div class="container">
+  <header class="site"><a class="brand" href="index.html">← Utility Tools</a></header>
+
+  <section class="hero">
+    <h1>Contact Us</h1>
+    <p>Have a question, request, or bug report? Fill in the form below or email us directly at 
+      <a href="mailto:chief.apollonian@gmail.com">chief.apollonian@gmail.com</a>.
+    </p>
+  </section>
+
+  <section class="section">
+    <form id="contact-form" action="https://formspree.io/f/mzzangaz" method="POST">
+      <!-- Honeypot for bots -->
+      <input type="text" name="_gotcha" autocomplete="off" class="hidden">
+
+      <label for="name">Name</label>
+      <input id="name" type="text" name="name" required placeholder="Your name">
+
+      <label for="email">Your Email</label>
+      <input id="email" type="email" name="email" required placeholder="you@example.com">
+
+      <label for="subject">Subject</label>
+      <input id="subject" type="text" name="subject" placeholder="What’s this about?" required>
+
+      <label for="message">Message</label>
+      <textarea id="message" name="message" rows="6" required placeholder="Write your message here…"></textarea>
+
+      <div class="stack" style="margin-top:12px">
+        <button type="submit">Send</button>
+        <a class="button secondary" href="mailto:chief.apollonian@gmail.com">Open email app</a>
+      </div>
+    </form>
+  </section>
+
+  <footer class="site">
+    <a href="index.html">Home</a> · <a href="about.html">About</a> · <a href="privacy.html">Privacy</a> · <a href="contact.html">Contact</a>
+  </footer>
+</div>
+
+<script>
+  const form = document.getElementById('contact-form');
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const data = new FormData(form);
+    const statusEl = document.createElement('p');
+    statusEl.className = 'small';
+    statusEl.style.marginTop = '10px';
+    form.appendChild(statusEl);
+
+    try {
+      const response = await fetch(form.action, {
+        method: form.method,
+        body: data,
+        headers: { 'Accept': 'application/json' }
+      });
+      if (response.ok) {
+        statusEl.textContent = "Thanks! Your message has been sent.";
+        form.reset();
+      } else {
+        const json = await response.json();
+        statusEl.textContent = json.error || "There was a problem sending your message.";
+      }
+    } catch (error) {
+      statusEl.textContent = "Network error. Please try again or email directly.";
+    }
+  });
+</script>
+</body>
+</html>
