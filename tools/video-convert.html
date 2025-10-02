@@ -44,6 +44,7 @@
       <a id="dl" class="button secondary hidden" download>Download</a>
     </div>
     <p id="log" class="small"></p>
+    <progress id="prog" max="100" value="0" style="width:100%;display:none"></progress>
     <p class="small">Note: MP4 encoding may not be available in some ffmpeg.wasm builds. If it fails, try WebM.</p>
   </div>
 
@@ -63,6 +64,7 @@ const crf = document.getElementById('crf');
 const go = document.getElementById('go');
 const dl = document.getElementById('dl');
 const logEl = document.getElementById('log');
+const prog = document.getElementById('prog');
 
 // Enhanced click handler with immediate feedback
 go.onclick = async () => {
@@ -74,6 +76,8 @@ go.onclick = async () => {
   }
   
   go.disabled = true; // Prevent spam clicks
+  prog.style.display = 'none'; // Hide progress initially
+  prog.value = 0;
   logEl.textContent = 'Starting conversion... (loading engine if needed)';
   const fmt = outfmt.value;
   const resVal = res.value;
@@ -98,6 +102,12 @@ go.onclick = async () => {
 
     logEl.textContent = 'Converting... (this may take a few minutes)';
     ffmpeg.FS('writeFile', 'in', await FFmpegFetchFile(file));
+
+    // Set up progress callback before run
+    ffmpeg.setProgress(({ratio}) => {
+      prog.style.display = 'block';
+      prog.value = Math.round((ratio || 0) * 100);
+    });
 
     const scaleArgs = (resVal === 'same') ? [] : ['-vf', `scale=${resVal}:flags=lanczos`];
 
@@ -133,6 +143,7 @@ go.onclick = async () => {
     alert('Encoding failed. Try WebM output if MP4 isn’t supported in this build.');
   } finally {
     go.disabled = false; // Re-enable button
+    prog.style.display = 'none'; // Hide progress on end/error
     // Clean up files if loaded
     if (ffmpeg && ffmpeg.isLoaded()) {
       try {
