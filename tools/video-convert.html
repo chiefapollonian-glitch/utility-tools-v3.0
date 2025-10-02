@@ -6,7 +6,8 @@
 <link rel="icon" href="../assets/favicon.svg">
 <link rel="stylesheet" href="../assets/theme.css">
 <link rel="stylesheet" href="../assets/styles.css">
-<script src="../vendor/ffmpeg.min.js"></script>
+<!-- FFmpeg via reliable jsDelivr CDN -->
+<script defer src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js"></script>
         <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2381000819704004"
           crossorigin="anonymous"></script>
 </head>
@@ -50,64 +51,97 @@
 </div>
 
 <script>
-const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({ log:false });
+let ffmpeg = null; // Global FFmpeg instance
 
 function nameWithExt(name, ext){ return name.replace(/\.[^.]+$/, '') + '.' + ext; }
 
-document.getElementById('go').onclick = async () => {
-  const file = document.getElementById('f').files?.[0];
+// Setup UI elements
+const f = document.getElementById('f');
+const outfmt = document.getElementById('outfmt');
+const res = document.getElementById('res');
+const crf = document.getElementById('crf');
+const go = document.getElementById('go');
+const dl = document.getElementById('dl');
+const logEl = document.getElementById('log');
+
+// Enhanced click handler with immediate feedback
+go.onclick = async () => {
+  const file = f.files?.[0];
   if (!file) return alert('Pick a file');
-  const fmt = document.getElementById('outfmt').value;
-  const res = document.getElementById('res').value;
-  const crf = String(Math.max(18, Math.min(40, parseInt(document.getElementById('crf').value||28))));
+  if (file.size > 200 * 1024 * 1024) { // 200MB cap
+    logEl.textContent = 'File too large (>200MB)—try a shorter video.';
+    return;
+  }
+  
+  go.disabled = true; // Prevent spam clicks
+  logEl.textContent = 'Starting conversion... (loading engine if needed)';
+  const fmt = outfmt.value;
+  const resVal = res.value;
+  const crfVal = String(Math.max(18, Math.min(40, parseInt(crf.value || 28))));
   const target = 'out.' + fmt;
 
-  const log = (t)=> document.getElementById('log').textContent = t;
-
-  log('Loading engine…');
-  if (!ffmpeg.isLoaded()) await ffmpeg.load();
-
-  ffmpeg.FS('writeFile','in', await fetchFile(file));
-  log('Converting…');
-
-  const scaleArgs = (res==='same') ? [] : ['-vf', `scale=${res}:flags=lanczos`];
-
   try {
+    // Lazy-load FFmpeg if not already done
+    if (!ffmpeg) {
+      logEl.textContent = 'Loading engine... (this may take 10-30s first time)';
+      if (typeof createFFmpeg === 'undefined' || typeof fetchFile === 'undefined') {
+        throw new Error('FFmpeg library not loaded from CDN. Check your internet or try refreshing.');
+      }
+      const { createFFmpeg, fetchFile: FFmpegFetchFile } = FFmpeg;
+      ffmpeg = createFFmpeg({ 
+        log: false,
+        corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.15/dist/umd/ffmpeg-core.js'
+      });
+      await ffmpeg.load();
+      logEl.textContent = 'Engine loaded! Converting...';
+    }
+
+    logEl.textContent = 'Converting... (this may take a few minutes)';
+    ffmpeg.FS('writeFile', 'in', await FFmpegFetchFile(file));
+
+    const scaleArgs = (resVal === 'same') ? [] : ['-vf', `scale=${resVal}:flags=lanczos`];
+
     if (fmt === 'webm') {
       // VP9 video + Opus audio
       await ffmpeg.run(
-        '-i','in',
+        '-i', 'in',
         ...scaleArgs,
-        '-c:v','libvpx-vp9','-b:v','0','-crf', crf,
-        '-c:a','libopus','-b:a','128k',
+        '-c:v', 'libvpx-vp9', '-b:v', '0', '-crf', crfVal,
+        '-c:a', 'libopus', '-b:a', '128k',
         target
       );
     } else {
-      // MP4 — may fail if H.264/AAC encoders are unavailable in your build
+      // MP4 — may fail if H.264/AAC encoders unavailable
       await ffmpeg.run(
-        '-i','in',
+        '-i', 'in',
         ...scaleArgs,
-        '-c:v','libx264','-preset','veryfast','-crf', crf,
-        '-c:a','aac','-b:a','128k','-movflags','+faststart',
+        '-c:v', 'libx264', '-preset', 'veryfast', '-crf', crfVal,
+        '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart',
         target
       );
     }
-  } catch(e){
-    log('Error during encode: ' + e.message);
-    alert('Encoding failed. Try WebM output if MP4 isn’t supported in this build.');
-    return;
-  }
 
-  const data = ffmpeg.FS('readFile', target);
-  const blob = new Blob([data.buffer], { type: (fmt==='webm'?'video/webm':'video/mp4') });
-  const a = document.getElementById('dl');
-  a.href = URL.createObjectURL(blob);
-  a.download = nameWithExt(file.name, fmt);
-  a.classList.remove('hidden');
-  log('Done.');
+    const data = ffmpeg.FS('readFile', target);
+    const blob = new Blob([data.buffer], { type: (fmt === 'webm' ? 'video/webm' : 'video/mp4') });
+    dl.href = URL.createObjectURL(blob);
+    dl.download = nameWithExt(file.name, fmt);
+    dl.classList.remove('hidden');
+    logEl.textContent = 'Done! Check your download.';
+  } catch (error) {
+    console.error('Conversion error:', error); // For dev tools
+    logEl.textContent = `Error: ${error.message}. Try WebM output if MP4 isn’t supported.`;
+    alert('Encoding failed. Try WebM output if MP4 isn’t supported in this build.');
+  } finally {
+    go.disabled = false; // Re-enable button
+    // Clean up files if loaded
+    if (ffmpeg && ffmpeg.isLoaded()) {
+      try {
+        ffmpeg.FS('unlink', 'in');
+        ffmpeg.FS('unlink', target);
+      } catch {} // Ignore cleanup errors
+    }
+  }
 };
 </script>
 </body>
 </html>
-
