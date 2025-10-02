@@ -7,15 +7,8 @@
 <link rel="stylesheet" href="../assets/theme.css">
 <link rel="stylesheet" href="../assets/styles.css">
 
-<!-- Try local ffmpeg.wasm first (if you already ship it), then CDN fallback -->
-<script src="../vendor/ffmpeg.min.js"></script>
-<script>
-  if (!window.FFmpeg) {
-    var s=document.createElement('script');
-    s.src='https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js';
-    document.head.appendChild(s);
-  }
-</script>
+<!-- FFmpeg via reliable jsDelivr CDN -->
+<script defer src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.7/dist/umd/ffmpeg.js"></script>
 
 <!-- AdSense -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2381000819704004" crossorigin="anonymous"></script>
@@ -57,21 +50,35 @@
 
 <script>
 const $ = id => document.getElementById(id);
-const log = msg => { const l=$('log'); l.textContent += msg + '\n'; l.scrollTop = l.scrollHeight; };
+const log = msg => { 
+  const l = $('log'); 
+  l.textContent += msg + '\n'; 
+  l.scrollTop = l.scrollHeight; 
+};
 
 let ffmpeg, coreReady = false;
 
 async function loadFFmpeg() {
   if (coreReady) return;
-  // ensure FFmpeg global is present (from local or CDN)
-  await new Promise(r => {
-    if (window.FFmpeg) return r();
-    const check = setInterval(()=>{ if (window.FFmpeg) { clearInterval(check); r(); } }, 50);
+  
+  // Wait for FFmpeg global from CDN
+  await new Promise((resolve, reject) => {
+    let tries = 0;
+    const check = setInterval(() => {
+      if (window.FFmpeg) { 
+        clearInterval(check); 
+        resolve(); 
+      }
+      if (++tries > 200) { 
+        clearInterval(check); 
+        reject(new Error('FFmpeg library not loaded from CDN. Check internet or refresh.')); 
+      }
+    }, 50);
   });
 
   const { createFFmpeg, fetchFile } = FFmpeg;
   ffmpeg = createFFmpeg({
-    corePath: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js',
+    corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.7/dist/umd/ffmpeg-core.js',
     log: true,
   });
   log('Loading FFmpeg core… (~25–30 MB, once per session)');
@@ -81,65 +88,87 @@ async function loadFFmpeg() {
 }
 
 $('run').onclick = async () => {
-  const file = $('file').files?.[0];
-  if (!file) return alert('Choose a video file');
-  await loadFFmpeg();
+  const runBtn = $('run');
+  runBtn.disabled = true;
+  log('Starting extraction...');
+  
+  try {
+    const file = $('file').files?.[0];
+    if (!file) { 
+      alert('Choose a video file'); 
+      return; 
+    }
+    if (file.size > 100 * 1024 * 1024) { 
+      log('File too large (>100MB)—try a shorter video.'); 
+      return; 
+    }
 
-  const fmt = $('format').value;
-  const start = parseFloat($('start').value||0);
-  const dur   = parseFloat($('dur').value||0);
-  const inName = 'input.' + (file.name.split('.').pop() || 'mp4');
-  const outName = 'output.' + fmt;
+    await loadFFmpeg();
 
-  // Prepare fs
-  ffmpeg.FS('writeFile', inName, await FFmpeg.fetchFile(file));
-  log(`Loaded: ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)`);
+    const fmt = $('format').value;
+    const start = parseFloat($('start').value || 0);
+    const dur = parseFloat($('dur').value || 0);
+    const inName = 'input.' + (file.name.split('.').pop() || 'mp4');
+    const outName = 'output.' + fmt;
 
-  // Build args
-  const args = ['-ss', String(start)];
-  if (dur > 0) args.push('-t', String(dur));
-  args.push('-i', inName, '-vn'); // drop video
+    // Prepare FS
+    ffmpeg.FS('writeFile', inName, await FFmpeg.fetchFile(file));
+    log(`Loaded: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
 
-  // Encoding per format (pick codecs that are commonly available in ffmpeg.wasm)
-  if (fmt === 'mp3') {
-    args.push('-ar','44100','-ac','2','-b:a','192k','-f','mp3', outName);
-  } else if (fmt === 'wav') {
-    args.push('-ar','44100','-ac','2','-c:a','pcm_s16le','-f','wav', outName);
-  } else if (fmt === 'm4a') {
-    // Try to stream-copy AAC if possible; else encode AAC.
-    // First attempt: copy
-    try {
+    // Build args
+    const args = ['-ss', String(start)];
+    if (dur > 0) args.push('-t', String(dur));
+    args.push('-i', inName, '-vn'); // drop video
+
+    // Encoding per format
+    let finalArgs = [...args];
+    if (fmt === 'mp3') {
+      finalArgs.push('-ar', '44100', '-ac', '2', '-b:a', '192k', '-f', 'mp3', outName);
+    } else if (fmt === 'wav') {
+      finalArgs.push('-ar', '44100', '-ac', '2', '-c:a', 'pcm_s16le', '-f', 'wav', outName);
+    } else if (fmt === 'm4a') {
+      // Try stream copy first (fast)
       log('Trying stream copy to M4A (fast)…');
-      await ffmpeg.run(...['-ss', String(start)].concat(dur>0?['-t',String(dur)]:[]).concat(['-i', inName, '-vn', '-c:a', 'copy', '-movflags', '+faststart', outName]));
-    } catch(e) {
-      log('Copy failed, encoding AAC…');
-      await ffmpeg.run(...args.concat(['-c:a','aac','-b:a','192k','-movflags','+faststart', outName]));
+      const copyArgs = [...args, '-c:a', 'copy', '-movflags', '+faststart', outName];
+      try {
+        await ffmpeg.run(...copyArgs);
+      } catch (e) {
+        log('Copy failed, encoding AAC…');
+        finalArgs.push('-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', outName);
+        await ffmpeg.run(...finalArgs);
+      }
+    } else if (fmt === 'ogg') {
+      finalArgs.push('-c:a', 'libopus', '-b:a', '128k', '-f', 'ogg', outName);
     }
-  } else if (fmt === 'ogg') {
-    args.push('-c:a','libopus','-b:a','128k','-f','ogg', outName);
-  }
 
-  if (fmt !== 'm4a') {
-    // For non-M4A paths we still need to run if not already executed
-    try {
-      await ffmpeg.run(...args);
-    } catch (e) {
-      log('FFmpeg error:\n' + e.message);
-      alert('Conversion failed. Try a different format (WAV works on all builds).');
-      return;
+    if (fmt !== 'm4a' || finalArgs.length > 0) {
+      await ffmpeg.run(...finalArgs);
+    }
+
+    const data = ffmpeg.FS('readFile', outName);
+    const mimeType = { mp3: 'audio/mpeg', wav: 'audio/wav', m4a: 'audio/mp4', ogg: 'audio/ogg' }[fmt] || 'application/octet-stream';
+    const blob = new Blob([data.buffer], { type: mimeType });
+
+    const a = $('dl');
+    a.href = URL.createObjectURL(blob);
+    a.download = (file.name.replace(/\.[^.]+$/, '') + '.' + fmt);
+    a.classList.remove('hidden');
+    log('Done. Ready to download.');
+  } catch (error) {
+    console.error('Extraction error:', error);
+    log(`Error: ${error.message}. Try a different format (WAV always works) or smaller file.`);
+    alert('Extraction failed. Check log above.');
+  } finally {
+    runBtn.disabled = false;
+    // Cleanup
+    if (ffmpeg && coreReady) {
+      try {
+        const inName = 'input.' + ($('file').files?.[0]?.name.split('.').pop() || 'mp4');
+        ffmpeg.FS('unlink', inName);
+        ffmpeg.FS('unlink', 'output.' + $('format').value);
+      } catch {}
     }
   }
-
-  const data = ffmpeg.FS('readFile', outName);
-  const blob = new Blob([data.buffer], { type: ({
-    mp3:'audio/mpeg', wav:'audio/wav', m4a:'audio/mp4', ogg:'audio/ogg'
-  })[fmt] || 'application/octet-stream' });
-
-  const a = $('dl');
-  a.href = URL.createObjectURL(blob);
-  a.download = (file.name.replace(/\.[^.]+$/, '') + '.' + fmt);
-  a.classList.remove('hidden');
-  log('Done. Ready to download.');
 };
 </script>
 
