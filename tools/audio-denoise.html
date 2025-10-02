@@ -7,9 +7,9 @@
   <link rel="stylesheet" href="../assets/theme.css">
   <link rel="stylesheet" href="../assets/styles.css">
 
-  <!-- FFmpeg.wasm wrapper via ESM (reliable) -->
+  <!-- FFmpeg.wasm wrapper via ESM (reliable jsDelivr CDN) -->
   <script type="module">
-    import { createFFmpeg, fetchFile } from "https://esm.sh/@ffmpeg/ffmpeg@0.12.6";
+    import { createFFmpeg, fetchFile } from "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/+esm";
     // expose globally so the rest of the page can use it
     window.FFmpeg = { createFFmpeg, fetchFile };
   </script>
@@ -50,7 +50,7 @@
 
     <div class="stack" style="margin-top:12px">
       <button id="run">Denoise</button>
-      <button id="cancel" class="secondary">Cancel</button>
+      <button id="cancel" class="secondary" style="display:none">Cancel</button>
       <a id="dl" class="button secondary hidden" download>Download</a>
     </div>
 
@@ -84,19 +84,23 @@ function buildFilter(nf, tn){ return `afftdn=nf=${nf}:tn=${tn?1:0}`; }
 async function loadFFmpeg() {
   if (coreReady) return;
 
-  // Wait until the ESM loader has set window.FFmpeg
+  // Wait until the ESM loader has set window.FFmpeg (with timeout for safety)
   await new Promise((res,rej)=>{
     let tries=0;
     const iv=setInterval(()=>{
       if (window.FFmpeg && window.FFmpeg.createFFmpeg) { clearInterval(iv); res(); }
-      if (++tries>200){ clearInterval(iv); rej(new Error('FFmpeg loader not found.')); }
+      if (++tries>300){ clearInterval(iv); rej(new Error('FFmpeg loader not found from CDN. Check internet or refresh.')); } // Longer timeout
     }, 50);
   });
 
-  ffmpeg = FFmpeg.createFFmpeg({
+  if (typeof window.FFmpeg.createFFmpeg === 'undefined') {
+    throw new Error('FFmpeg library not loaded from CDN. Check your internet or try refreshing the page.');
+  }
+
+  ffmpeg = window.FFmpeg.createFFmpeg({
     log: false,
     // Keep all core assets on the same CDN folder as ffmpeg-core.js
-    corePath: 'https://esm.sh/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js'
+    corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd/ffmpeg-core.js'
   });
 
   $('status').textContent = 'Loading engine… (~25–30 MB on first use)';
@@ -105,7 +109,7 @@ async function loadFFmpeg() {
   $('status').textContent = 'Ready.';
 }
 
-$('cancel').onclick = ()=>{ abortCtrl.aborted=true; $('status').textContent='Cancelled.'; };
+$('cancel').onclick = ()=>{ abortCtrl.aborted=true; $('status').textContent='Cancelled.'; $('cancel').style.display='none'; };
 
 async function runWithCancel(args){
   const runP = ffmpeg.run(...args);
@@ -118,9 +122,23 @@ async function runWithCancel(args){
 $('run').onclick = async () => {
   try {
     abortCtrl = {aborted:false};
+    $('run').disabled = true;
+    $('cancel').style.display = 'inline-block';
     const file = $('file').files?.[0];
-    if (!file) return alert('Choose an audio or video file');
+    if (!file) { 
+      alert('Choose an audio or video file'); 
+      $('run').disabled = false; 
+      $('cancel').style.display = 'none'; 
+      return; 
+    }
+    if (file.size > 50 * 1024 * 1024) { 
+      $('status').textContent = 'File too large (>50MB)—try a shorter clip.'; 
+      $('run').disabled = false; 
+      $('cancel').style.display = 'none'; 
+      return; 
+    }
 
+    $('status').textContent = 'Starting denoise... (loading engine if needed)';
     await loadFFmpeg();
 
     $('prog').style.display='block'; $('prog').value=0;
@@ -152,11 +170,15 @@ $('run').onclick = async () => {
       if (!ffmpeg.FS('readdir','/').includes(outName)) {
         if (mode==='audio-mp3') {
           // fallback to WAV if mp3 encoder unavailable
+          $('status').textContent = 'MP3 fallback to WAV...';
           await runWithCancel(['-i', inName, '-vn', '-af', filter, '-c:a','pcm_s16le','out.wav']);
           const buf = ffmpeg.FS('readFile','out.wav');
           const url = URL.createObjectURL(new Blob([buf.buffer], {type:'audio/wav'}));
           const a=$('dl'); a.href=url; a.download=baseName(file.name)+'-denoised.wav'; a.classList.remove('hidden');
-          $('status').textContent='Done (exported WAV fallback).'; $('prog').style.display='none'; return;
+          $('status').textContent='Done (exported WAV fallback).'; $('prog').style.display='none'; 
+          $('run').disabled = false; $('cancel').style.display = 'none'; 
+          ffmpeg.FS('unlink', inName); ffmpeg.FS('unlink', 'out.wav'); 
+          return;
         }
         throw new Error('Output not created.');
       }
@@ -165,13 +187,16 @@ $('run').onclick = async () => {
       const mime = (mode==='audio-wav') ? 'audio/wav' : 'audio/mpeg';
       const url = URL.createObjectURL(new Blob([buf.buffer], {type:mime}));
       const a=$('dl'); a.href=url; a.download=baseName(file.name)+'-denoised.'+(mode==='audio-wav'?'wav':'mp3'); a.classList.remove('hidden');
-      $('status').textContent='Done.'; $('prog').style.display='none'; return;
+      $('status').textContent='Done.'; $('prog').style.display='none'; 
+      $('run').disabled = false; $('cancel').style.display = 'none'; 
+      ffmpeg.FS('unlink', inName); ffmpeg.FS('unlink', outName); 
+      return;
     }
 
     // Video outputs: copy video stream, re-encode audio with denoise
     if (!isVideoFilename(file.name)) {
       alert('Selected output is Video, but input looks audio-only. Choose an audio output, or supply a video.');
-      $('prog').style.display='none'; return;
+      $('prog').style.display='none'; $('run').disabled = false; $('cancel').style.display = 'none'; return;
     }
 
     if (mode === 'video-mp4') {
@@ -190,7 +215,10 @@ $('run').onclick = async () => {
           const buf = ffmpeg.FS('readFile', 'out.mp4');
           const url = URL.createObjectURL(new Blob([buf.buffer], {type:'video/mp4'}));
           const a=$('dl'); a.href=url; a.download=baseName(file.name)+'-denoised.mp4'; a.classList.remove('hidden');
-          $('status').textContent='Done.'; $('prog').style.display='none'; return;
+          $('status').textContent='Done.'; $('prog').style.display='none'; 
+          $('run').disabled = false; $('cancel').style.display = 'none'; 
+          ffmpeg.FS('unlink', inName); ffmpeg.FS('unlink', 'out.mp4'); 
+          return;
         }
       } catch(e){ /* fall through */ }
       $('status').textContent = 'AAC not available; falling back to MKV/Opus…';
@@ -211,14 +239,27 @@ $('run').onclick = async () => {
       const buf = ffmpeg.FS('readFile', 'out.mkv');
       const url = URL.createObjectURL(new Blob([buf.buffer], {type:'video/x-matroska'}));
       const a=$('dl'); a.href=url; a.download=baseName(file.name)+'-denoised.mkv'; a.classList.remove('hidden');
-      $('status').textContent='Done.'; $('prog').style.display='none'; return;
+      $('status').textContent='Done.'; $('prog').style.display='none'; 
+      $('run').disabled = false; $('cancel').style.display = 'none'; 
+      ffmpeg.FS('unlink', inName); ffmpeg.FS('unlink', 'out.mkv'); 
+      return;
     }
 
   } catch (e) {
     if (e && e.message==='cancelled') return;
     $('status').textContent = (e && e.message)? e.message : 'Error. Try different settings or a shorter input.';
     $('prog').style.display='none';
+    $('run').disabled = false; 
+    $('cancel').style.display = 'none';
     console.error(e);
+    // Cleanup on error
+    try {
+      if (ffmpeg && ffmpeg.isLoaded()) {
+        if (ffmpeg.FS('readdir','/').includes('in.' + extOf($('file').files?.[0]?.name))) {
+          ffmpeg.FS('unlink', 'in.' + extOf($('file').files?.[0]?.name));
+        }
+      }
+    } catch {}
   }
 };
 </script>
