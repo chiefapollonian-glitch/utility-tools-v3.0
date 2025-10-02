@@ -44,56 +44,68 @@
 </div>
 
 <script>
-window.addEventListener('load', async () => {
-  // Check if FFmpeg loaded from CDN
-  if (typeof createFFmpeg === 'undefined' || typeof fetchFile === 'undefined') {
-    console.error('FFmpeg library failed to load from CDN. Check network or try refreshing.');
-    document.getElementById('log').textContent = 'Error: Library failed to load. Please refresh and try again.';
-    return;
-  }
+let ffmpeg = null; // Global FFmpeg instance
 
-  const { createFFmpeg, fetchFile } = FFmpeg;
-  // Create FFmpeg instance with core path from CDN (matches version for WASM loading)
-  const ffmpeg = createFFmpeg({ 
-    log: false,
-    corePath: 'https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd/ffmpeg-core.js'
-  });
+// Setup UI immediately (no waiting for load)
+const outfmt = document.getElementById('outfmt');
+const br = document.getElementById('br');
+const log = document.getElementById('log');
+const goBtn = document.getElementById('go');
+outfmt.onchange = () => {
+  document.getElementById('mp3b').style.display = (outfmt.value === 'mp3') ? 'inline-block' : 'none';
+};
+outfmt.onchange();
 
-  const outfmt = document.getElementById('outfmt');
-  const br = document.getElementById('br');
-  outfmt.onchange = ()=> document.getElementById('mp3b').style.display = (outfmt.value==='mp3')?'inline-block':'none';
-  outfmt.onchange();
+function nameWithExt(name, ext) { 
+  return name.replace(/\.[^.]+$/, '') + '.' + ext; 
+}
 
-  function nameWithExt(name, ext){ return name.replace(/\.[^.]+$/, '') + '.' + ext; }
+// Enhanced click handler with immediate feedback
+goBtn.onclick = async () => {
+  const file = document.getElementById('f').files?.[0];
+  if (!file) return alert('Pick a file');
+  
+  goBtn.disabled = true; // Prevent spam clicks
+  log.textContent = 'Starting conversion... (loading engine if needed)';
+  const ext = outfmt.value;
+  const target = 'out.' + ext;
 
-  document.getElementById('go').onclick = async () => {
-    const file = document.getElementById('f').files?.[0];
-    if (!file) return alert('Pick a file');
-    const ext = outfmt.value;
-    const target = 'out.' + ext;
+  try {
+    // Lazy-load FFmpeg if not already done
+    if (!ffmpeg) {
+      log.textContent = 'Loading engine... (this may take 10-30s first time)';
+      if (typeof createFFmpeg === 'undefined' || typeof fetchFile === 'undefined') {
+        throw new Error('FFmpeg library not loaded from CDN. Check your internet or try refreshing.');
+      }
+      const { createFFmpeg, fetchFile } = FFmpeg;
+      ffmpeg = createFFmpeg({ 
+        log: false,
+        corePath: 'https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd/ffmpeg-core.js'
+      });
+      await ffmpeg.load();
+      log.textContent = 'Engine loaded! Converting...';
+    }
 
-    document.getElementById('log').textContent = 'Loading engine…';
-    if (!ffmpeg.isLoaded()) await ffmpeg.load();
-
-    document.getElementById('log').textContent = 'Converting…';
-    ffmpeg.FS('writeFile','in', await fetchFile(file));
+    log.textContent = 'Converting... (this may take a few seconds)';
+    ffmpeg.FS('writeFile', 'in', await fetchFile(file));
     if (ext === 'mp3') {
-      const bps = Math.max(96, Math.min(320, parseInt(br.value||192))) + 'k';
-      await ffmpeg.run('-i','in','-codec:a','libmp3lame','-b:a', bps, target);
+      const bps = Math.max(96, Math.min(320, parseInt(br.value || 192))) + 'k';
+      await ffmpeg.run('-i', 'in', '-codec:a', 'libmp3lame', '-b:a', bps, target);
     } else if (ext === 'wav') {
-      await ffmpeg.run('-i','in','-codec:a','pcm_s16le', target);
+      await ffmpeg.run('-i', 'in', '-codec:a', 'pcm_s16le', target);
     } else if (ext === 'flac') {
-      await ffmpeg.run('-i','in','-codec:a','flac','-compression_level','5', target);
+      await ffmpeg.run('-i', 'in', '-codec:a', 'flac', '-compression_level', '5', target);
     }
     const data = ffmpeg.FS('readFile', target);
-    const blob = new Blob([data.buffer], { type: (ext==='mp3'?'audio/mpeg':(ext==='wav'?'audio/wav':'audio/flac')) });
+    const blob = new Blob([data.buffer], { 
+      type: (ext === 'mp3' ? 'audio/mpeg' : (ext === 'wav' ? 'audio/wav' : 'audio/flac')) 
+    });
     const a = document.getElementById('dl');
     a.href = URL.createObjectURL(blob);
     a.download = nameWithExt(file.name, ext);
     a.classList.remove('hidden');
-    document.getElementById('log').textContent = 'Done.';
-  };
-});
-</script>
-</body>
-</html>
+    log.textContent = 'Done! Check download.';
+  } catch (error) {
+    console.error('Conversion error:', error); // For dev tools
+    log.textContent = `Error: ${error.message}. Try a smaller file or refresh the page.`;
+  } finally {
