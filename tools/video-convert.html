@@ -6,7 +6,7 @@
 <link rel="icon" href="../assets/favicon.svg">
 <link rel="stylesheet" href="../assets/theme.css">
 <link rel="stylesheet" href="../assets/styles.css">
-<!-- FFmpeg via reliable jsDelivr CDN -->
+<!-- FFmpeg via reliable jsDelivr CDN (fixed version) -->
 <script defer src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js"></script>
         <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2381000819704004"
           crossorigin="anonymous"></script>
@@ -112,7 +112,7 @@ go.onclick = async () => {
     }
 
     logEl.textContent = 'Converting... (this may take a few minutes)';
-    ffmpeg.FS('writeFile', 'in', await FFmpeg.fetchFile(file));
+    ffmpeg.FS('writeFile', 'in', await FFmpegFetchFile(file));
 
     const scaleArgs = (resVal === 'same') ? [] : ['-vf', `scale=${resVal}:flags=lanczos`];
 
@@ -128,35 +128,4 @@ go.onclick = async () => {
     } else {
       // MP4 — may fail if H.264/AAC encoders unavailable
       await ffmpeg.run(
-        '-i', 'in',
-        ...scaleArgs,
-        '-c:v', 'libx264', '-preset', 'veryfast', '-crf', crfVal,
-        '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart',
-        target
-      );
-    }
-
-    const data = ffmpeg.FS('readFile', target);
-    const blob = new Blob([data.buffer], { type: (fmt === 'webm' ? 'video/webm' : 'video/mp4') });
-    dl.href = URL.createObjectURL(blob);
-    dl.download = nameWithExt(file.name, fmt);
-    dl.classList.remove('hidden');
-    logEl.textContent = 'Done! Check your download.';
-  } catch (error) {
-    console.error('Conversion error:', error); // For dev tools
-    logEl.textContent = `Error: ${error.message}. Try WebM output if MP4 isn’t supported.`;
-    alert('Encoding failed. Try WebM output if MP4 isn’t supported in this build.');
-  } finally {
-    go.disabled = false; // Re-enable button
-    // Clean up files if loaded
-    if (ffmpeg && ffmpeg.isLoaded()) {
-      try {
-        ffmpeg.FS('unlink', 'in');
-        ffmpeg.FS('unlink', target);
-      } catch {} // Ignore cleanup errors
-    }
-  }
-};
-</script>
-</body>
-</html>
+        '-i',
