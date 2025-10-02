@@ -7,8 +7,8 @@
 <link rel="stylesheet" href="../assets/theme.css">
 <link rel="stylesheet" href="../assets/styles.css">
 
-<!-- ImageTracer (MIT, local copy in /vendor/) -->
-<script src="../vendor/imagetracer_v1.2.6.min.js"></script>
+<!-- ImageTracer via reliable jsDelivr CDN -->
+<script defer src="https://cdn.jsdelivr.net/npm/imagetracerjs@1.2.6/imagetracer_v1.2.6.min.js"></script>
 
 <!-- Google AdSense -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2381000819704004" crossorigin="anonymous"></script>
@@ -40,53 +40,79 @@
     <p class="small">Tip: lower colors for cleaner shapes; increase “Path Omit” to drop tiny specks.</p>
 
     <div id="preview" class="section" style="overflow:auto; max-height:60vh;"></div>
+    <p id="log" class="small" style="margin-top:8px;color:var(--muted)"></p>
   </div>
 
   <footer class="site"><a href="../index.html">← Back to tools</a></footer>
 </div>
 
 <script>
-const $ = id => document.getElementById(id);
-
-$('run').onclick = async () => {
-  const file = $('file').files?.[0];
-  if(!file) return alert('Choose an image');
-
-  // Read as DataURL for ImageTracer
-  const dataUrl = await new Promise((res,rej)=>{
-    const r = new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file);
-  });
-
-  // Options from UI
-  const opts = {
-    numberofcolors: Math.max(2, Math.min(64, parseInt($('colors').value||8))),
-    blur: parseFloat($('blur').value||0),
-    ltres: parseFloat($('ltres').value||1),
-    strokewidth: $('stroked').checked ? 1 : 0,
-    lcpr: $('lcpr').checked ? 1 : 0,
-  };
-
-  // Vectorize
-  if (!window.ImageTracer) {
-    alert("ImageTracer library failed to load. Check vendor folder.");
+window.addEventListener('load', () => {
+  // Check if ImageTracer loaded from CDN
+  if (typeof ImageTracer === 'undefined') {
+    console.error('ImageTracer failed to load from CDN.');
+    document.getElementById('log').textContent = 'Error: Vectorization library failed to load. Please refresh and try again.';
     return;
   }
+  console.log('ImageTracer loaded successfully.');
 
-  ImageTracer.imageToSVG(
-    dataUrl,
-    svgstr => {
-      // Show and offer download
-      $('preview').innerHTML = svgstr;
-      const blob = new Blob([svgstr], {type:'image/svg+xml'});
-      const url = URL.createObjectURL(blob);
-      const a = $('dl');
-      a.href = url;
-      a.download = (file.name.replace(/\.[^.]+$/, '') + '.svg');
-      a.classList.remove('hidden');
-    },
-    opts
-  );
-};
+  const $ = id => document.getElementById(id);
+  const runBtn = $('run');
+  const fileInput = $('file');
+  const dl = $('dl');
+  const preview = $('preview');
+  const log = $('log');
+
+  runBtn.onclick = async () => {
+    const file = fileInput.files?.[0];
+    if (!file) return alert('Choose an image');
+
+    runBtn.disabled = true; // Prevent spam clicks
+    log.textContent = 'Vectorizing... (local processing)';
+    preview.innerHTML = ''; // Clear preview
+
+    try {
+      // Read as DataURL for ImageTracer
+      const dataUrl = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result);
+        r.onerror = rej;
+        r.readAsDataURL(file);
+      });
+
+      // Options from UI
+      const opts = {
+        numberofcolors: Math.max(2, Math.min(64, parseInt($('colors').value || 8))),
+        blur: parseFloat($('blur').value || 0),
+        ltres: parseFloat($('ltres').value || 1),
+        strokewidth: $('stroked').checked ? 1 : 0,
+        lcpr: $('lcpr').checked ? 1 : 0,
+      };
+
+      // Vectorize
+      ImageTracer.imageToSVG(
+        dataUrl,
+        (svgstr) => {
+          // Show and offer download
+          preview.innerHTML = svgstr;
+          const blob = new Blob([svgstr], { type: 'image/svg+xml' });
+          const url = URL.createObjectURL(blob);
+          dl.href = url;
+          dl.download = (file.name.replace(/\.[^.]+$/, '') + '.svg');
+          dl.classList.remove('hidden');
+          log.textContent = 'Done! SVG ready below.';
+        },
+        opts
+      );
+    } catch (error) {
+      console.error('Vectorize error:', error);
+      log.textContent = `Error: ${error.message}. Try a smaller image or refresh.`;
+      alert('Vectorization failed. Check image format or refresh.');
+    } finally {
+      runBtn.disabled = false;
+    }
+  };
+});
 </script>
 
 <!-- Bottom Ad (optional) -->
