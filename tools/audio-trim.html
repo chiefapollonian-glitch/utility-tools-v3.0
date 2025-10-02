@@ -6,7 +6,8 @@
 <link rel="icon" href="../assets/favicon.svg">
 <link rel="stylesheet" href="../assets/theme.css">
 <link rel="stylesheet" href="../assets/styles.css">
-<script src="../vendor/ffmpeg.min.js"></script>
+<!-- FFmpeg via reliable jsDelivr CDN -->
+<script defer src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
       <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2381000819704004"
           crossorigin="anonymous"></script>
 </head>
@@ -28,24 +29,69 @@
       <button id="go">Trim to MP3</button>
       <a id="dl" class="button secondary hidden" download="trim.mp3">Download</a>
     </div>
+    <p id="log" class="small" style="margin-top:8px;color:var(--muted)"></p>
   </div>
 
   <footer class="site"><a href="../index.html">← Back to tools</a></footer>
 </div>
 
 <script>
-const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({ log:false });
+let ffmpeg = null; // Global FFmpeg instance
+
+// Setup UI elements
+const f = document.getElementById('f');
+const s = document.getElementById('s');
+const d = document.getElementById('d');
+const go = document.getElementById('go');
+const dl = document.getElementById('dl');
+const log = document.getElementById('log');
+
+// Enhanced click handler with immediate feedback
 go.onclick = async () => {
-  const file = f.files?.[0]; if(!file) return alert('Pick a file');
-  if (!ffmpeg.isLoaded()) await ffmpeg.load();
-  ffmpeg.FS('writeFile','in', await fetchFile(file));
-  await ffmpeg.run('-ss', s.value, '-t', d.value, '-i', 'in', '-codec:a', 'libmp3lame', '-b:a','192k', 'out.mp3');
-  const data = ffmpeg.FS('readFile','out.mp3');
-  dl.href = URL.createObjectURL(new Blob([data.buffer],{type:'audio/mpeg'}));
-  dl.classList.remove('hidden');
+  const file = f.files?.[0];
+  if (!file) return alert('Pick a file');
+  if (parseFloat(d.value) < 1) return alert('Duration must be at least 1 second');
+  
+  go.disabled = true; // Prevent spam clicks
+  log.textContent = 'Starting trim... (loading engine if needed)';
+  
+  try {
+    // Lazy-load FFmpeg if not already done
+    if (!ffmpeg) {
+      log.textContent = 'Loading engine... (this may take 10-30s first time)';
+      if (typeof createFFmpeg === 'undefined' || typeof fetchFile === 'undefined') {
+        throw new Error('FFmpeg library not loaded from CDN. Check your internet or try refreshing.');
+      }
+      const { createFFmpeg, fetchFile } = FFmpeg;
+      ffmpeg = createFFmpeg({ 
+        log: false,
+        corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd/ffmpeg-core.js'
+      });
+      await ffmpeg.load();
+      log.textContent = 'Engine loaded! Trimming...';
+    }
+
+    log.textContent = 'Trimming... (this may take a few seconds)';
+    ffmpeg.FS('writeFile', 'in', await fetchFile(file));
+    await ffmpeg.run('-ss', s.value, '-t', d.value, '-i', 'in', '-codec:a', 'libmp3lame', '-b:a', '192k', 'out.mp3');
+    const data = ffmpeg.FS('readFile', 'out.mp3');
+    dl.href = URL.createObjectURL(new Blob([data.buffer], { type: 'audio/mpeg' }));
+    dl.classList.remove('hidden');
+    log.textContent = 'Done! Check your download.';
+  } catch (error) {
+    console.error('Trim error:', error); // For dev tools
+    log.textContent = `Error: ${error.message}. Try a smaller file (<10MB) or refresh.`;
+  } finally {
+    go.disabled = false; // Re-enable button
+    // Clean up files if loaded
+    if (ffmpeg && ffmpeg.isLoaded()) {
+      try {
+        ffmpeg.FS('unlink', 'in');
+        ffmpeg.FS('unlink', 'out.mp3');
+      } catch {} // Ignore cleanup errors
+    }
+  }
 };
 </script>
 </body>
 </html>
-
