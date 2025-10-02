@@ -6,8 +6,8 @@
 <link rel="icon" href="../assets/favicon.svg">
 <link rel="stylesheet" href="../assets/theme.css">
 <link rel="stylesheet" href="../assets/styles.css">
-<!-- FFmpeg via reliable CDN (no local vendor file needed) -->
-<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js"></script>
+<!-- FFmpeg via reliable jsDelivr CDN -->
+<script defer src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2381000819704004"
           crossorigin="anonymous"></script>
 </head>
@@ -75,15 +75,15 @@ goBtn.onclick = async () => {
     if (!ffmpeg) {
       log.textContent = 'Loading engine... (this may take 10-30s first time)';
       if (typeof createFFmpeg === 'undefined' || typeof fetchFile === 'undefined') {
-        throw new Error('FFmpeg library not loaded from CDN. Check your internet or try refreshing.');
+        throw new Error('FFmpeg library not loaded from CDN. Check your internet or try refreshing the page.');
       }
       const { createFFmpeg, fetchFile } = FFmpeg;
       ffmpeg = createFFmpeg({ 
         log: false,
-        corePath: 'https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd/ffmpeg-core.js'
+        corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd/ffmpeg-core.js'
       });
       await ffmpeg.load();
-      log.textContent = 'Engine loaded! Converting...';
+      log.textContent = 'Engine loaded! Now converting...';
     }
 
     log.textContent = 'Converting... (this may take a few seconds)';
@@ -104,8 +104,21 @@ goBtn.onclick = async () => {
     a.href = URL.createObjectURL(blob);
     a.download = nameWithExt(file.name, ext);
     a.classList.remove('hidden');
-    log.textContent = 'Done! Check download.';
+    log.textContent = 'Done! Check your download.';
   } catch (error) {
     console.error('Conversion error:', error); // For dev tools
-    log.textContent = `Error: ${error.message}. Try a smaller file or refresh the page.`;
+    log.textContent = `Error: ${error.message}. Try a smaller file (<10MB) or refresh.`;
   } finally {
+    goBtn.disabled = false; // Re-enable button
+    // Clean up files if loaded
+    if (ffmpeg && ffmpeg.isLoaded()) {
+      try {
+        ffmpeg.FS('unlink', 'in');
+        ffmpeg.FS('unlink', target);
+      } catch {} // Ignore cleanup errors
+    }
+  }
+};
+</script>
+</body>
+</html>
