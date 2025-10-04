@@ -1,163 +1,243 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Utility Tools by apollonianeye.uk — simple, lightweight tools</title>
-    <meta name="description" content="Simple, private, in-browser tools. No uploads. No logins.">
-    <meta name="google-adsense-account" content="ca-pub-2381000819704004">
-    <link rel="icon" href="assets/favicon.svg">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/theme.css">
-    <link rel="stylesheet" href="assets/styles.css">
-    <style>
-        .audio-warning { 
-            background: #ffeb3b; color: #d32f2f; padding: 12px; border-radius: 4px; margin: 20px 0; font-weight: bold; 
-            border-left: 4px solid #f57c00; text-align: center; 
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Apollonian Eye — Utility Tools</title>
+  <meta name="description" content="Free, private, in-browser tools for images, video, audio, and text." />
+  <meta name="color-scheme" content="light dark">
+  <!-- Address bar color (matches our defaults): light on desktop, dark on mobile -->
+  <meta name="theme-color" media="(min-width:801px)" content="#ffffff">
+  <meta name="theme-color" media="(max-width:800px)" content="#0b0b0d">
+
+  <style>
+    /* --------- Base palettes (used in AUTO) --------- */
+    :root{
+      /* Light (desktop default) */
+      --bg:#ffffff; --fg:#0b0b0d; --muted:#5a5f6a; --brand:#e11d48; --card:#f6f7f9; --line:#e6e8ee;
+      --link:#0a66ff; --ok:#16a34a; --warn:#d97706;
+      --logo:#000000; /* logo text is explicitly black in light mode */
+    }
+    /* Dark (mobile default) */
+    @media (max-width:800px){
+      :root{
+        --bg:#0b0b0d; --fg:#e7e7ea; --muted:#9aa0a6; --brand:#e11d48; --card:#15161a; --line:#23252b;
+        --link:#7aa2ff; --ok:#22c55e; --warn:#f59e0b;
+        --logo:#e7e7ea; /* logo text becomes light in dark mode */
+      }
+    }
+
+    /* --------- Forced overrides via toggle --------- */
+    [data-theme="light"]{
+      --bg:#ffffff; --fg:#0b0b0d; --muted:#5a5f6a; --brand:#e11d48; --card:#f6f7f9; --line:#e6e8ee;
+      --link:#0a66ff; --ok:#16a34a; --warn:#d97706;
+      --logo:#000000;
+    }
+    [data-theme="dark"]{
+      --bg:#0b0b0d; --fg:#e7e7ea; --muted:#9aa0a6; --brand:#e11d48; --card:#15161a; --line:#23252b;
+      --link:#7aa2ff; --ok:#22c55e; --warn:#f59e0b;
+      --logo:#e7e7ea;
+    }
+
+    /* --------- Layout & components --------- */
+    html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+    a{color:var(--link);text-decoration:none}
+    a:hover{text-decoration:underline}
+    .wrap{max-width:1000px;margin:0 auto;padding:20px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:8px 0 18px}
+    .brand{display:flex;align-items:center;gap:10px}
+    .dot{width:12px;height:12px;border-radius:50%;background:var(--brand)}
+    h1.logo-text{margin:0;font-size:1.4rem;color:var(--logo)}
+    .tag{font-size:.9rem;color:var(--muted)}
+    .grid{display:grid;gap:16px}
+    @media (min-width:720px){.grid{grid-template-columns:repeat(3,1fr)}}
+    .card{
+      background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px;
+      display:flex; flex-direction:column; gap:10px; min-height:150px;
+    }
+    .card h2{font-size:1rem;margin:0}
+    .card p{margin:0;color:var(--muted);font-size:.95rem}
+    .pill{display:inline-flex;gap:8px;align-items:center;background:transparent;border:1px solid var(--line);
+      color:var(--fg);padding:8px 10px;border-radius:999px;font-size:.9rem}
+    .cta{display:inline-flex;align-items:center;gap:8px;background:var(--brand);color:#fff;border-radius:12px;
+      padding:10px 12px;font-weight:600;border:none}
+    .cta:hover{text-decoration:none;opacity:.95}
+    .row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:auto}
+    .muted{color:var(--muted)}
+    footer{margin:24px 0;color:var(--muted);font-size:.9rem}
+    .notice{border:1px dashed var(--line);padding:10px;border-radius:12px;background:color-mix(in oklab, var(--card), transparent 40%)}
+    .cluster{display:flex;flex-wrap:wrap;gap:8px}
+
+    /* Theme toggle button */
+    .theme-toggle{
+      display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--card);
+      color:var(--fg);padding:8px 12px;border-radius:999px;cursor:pointer;font:inherit
+    }
+    .theme-toggle svg{width:16px;height:16px;display:block}
+    .sr-only{position:absolute;left:-9999px}
+  </style>
 </head>
 <body>
-    <div class="container">
-        <header class="site">
-            <img class="logo" src="assets/logo.svg" alt="Utility Tools logo" style="width: 160px; height: auto;">
-            <div class="brand">Utility Tools by www.apollonianeye.uk</div>
-        </header>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="dot"></div>
+        <div>
+          <h1 class="logo-text">Apollonian Eye — Utility Tools</h1>
+          <div class="tag">All processing in your browser • No uploads • No sign-in</div>
+        </div>
+      </div>
 
-        <section class="hero">
-            <h1>in a world of despicable data-vampires and scam-shillers,<br>this page offers simple, lightweight tools for modern online living</h1>
-            <p>No logins. No popups. <strong>All processing in your browser</strong> — files never leave your device.</p>
-            <div class="trust">
-                <span class="badge">Private</span>
-                <span class="badge">Fast</span>
-                <span class="badge">Free</span>
-            </div>
-        </section>
+      <!-- Theme toggle (Auto → Light → Dark, with persistence) -->
+      <button class="theme-toggle" id="themeToggle" type="button" aria-live="polite">
+        <span id="themeIcon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4a8 8 0 1 0 8 8 6 6 0 0 1-8-8z"/></svg></span>
+        <span id="themeLabel">Auto</span>
+      </button>
+    </header>
 
-        <section>
-            <div class="grid">
-                <article class="card">
-                    <h3>Small Caps Generator</h3>
-                    <p>Convert text to Unicode small caps. Copy-ready.</p>
-                    <a class="btn" href="tools/small-caps.html">Open tool</a>
-                </article>
+    <section class="cluster" style="margin-bottom:10px">
+      <span class="pill">Private by design</span>
+      <span class="pill">Open web tech</span>
+    </section>
 
-                <article class="card">
-                    <h3>Gothic / Fraktur Text</h3>
-                    <p>Convert text to Unicode Fraktur style.</p>
-                    <a class="btn" href="tools/gothic-fraktur.html">Open tool</a>
-                </article>
+    <section class="notice" aria-live="polite">
+      Default: **Light on desktop**, **Dark on mobile**. Use the toggle to force Light or Dark.
+    </section>
 
-                <article class="card">
-                    <h3>Typewriter / Monospace</h3>
-                    <p>Unicode monospace letters & digits.</p>
-                    <a class="btn" href="tools/typewriter.html">Open tool</a>
-                </article>
+    <main class="grid" style="margin-top:16px">
+      <!-- IMAGES -->
+      <article class="card">
+        <h2>Image Converter</h2>
+        <p>PNG ⇄ JPEG ⇄ WebP (on-device). Transparency preserved except JPEG.</p>
+        <div class="row">
+          <a class="cta" href="/tools/images-convert.html">Open</a>
+          <span class="muted">Private • Fast</span>
+        </div>
+      </article>
 
-                <article class="card">
-                    <h3>Image Converter (updated)</h3>
-                    <p>PNG ↔ JPG ↔ WebP with quality control.</p>
-                    <a class="btn" href="tools/images-convert.html">Open tool</a>
-                </article>
+      <article class="card">
+        <h2>Image Resizer</h2>
+        <p>Resize, fit, or fill. Batch support and EXIF-safe pipeline.</p>
+        <div class="row">
+          <a class="cta" href="/tools/images-resize.html">Open</a>
+          <span class="muted">On-device</span>
+        </div>
+      </article>
 
-                <article class="card">
-                    <h3>PDF Merger</h3>
-                    <p>Combine multiple PDFs with a click.</p>
-                    <a class="btn" href="tools/pdf-merge.html">Open tool</a>
-                </article>
+      <article class="card">
+        <h2>Raster → SVG (Vectorize)</h2>
+        <p>Turn logos and icons into clean, scalable SVGs.</p>
+        <div class="row">
+          <a class="cta" href="/tools/images-vectorize.html">Open</a>
+          <span class="muted">Great for logos</span>
+        </div>
+      </article>
 
-                <article class="card">
-                    <h3>Image Resizer</h3>
-                    <p>Resize with aspect lock, smooth or pixel-art.</p>
-                    <a class="btn" href="tools/image-resize.html">Open tool</a>
-                </article>
+      <article class="card">
+        <h2>Upscaler</h2>
+        <p>Sharpen or preserve pixel-art with appropriate filters.</p>
+        <div class="row">
+          <a class="cta" href="/tools/images-upscale.html">Open</a>
+          <span class="muted">2× / 4×</span>
+        </div>
+      </article>
 
-                <article class="card">
-                    <h3>Vectorize (SVG) -- BETA/experimental</h3>
-                    <p>Turn logos/icons into SVG — no upload.</p>
-                    <a class="btn" href="tools/image-vectorize.html">Open tool</a>
-                </article>
+      <!-- TEXT / DATA -->
+      <article class="card">
+        <h2>CSV ⇄ JSON</h2>
+        <p>Lossless convert with delimiter auto-detect and schema hints.</p>
+        <div class="row">
+          <a class="cta" href="/tools/csv-json.html">Open</a>
+          <span class="muted">Offline</span>
+        </div>
+      </article>
 
-                <article class="card">
-                    <h3>Image Upscaler</h3>
-                    <p>2× / 4× upscaling, smooth or pixel-art.</p>
-                    <a class="btn" href="tools/image-upscale.html">Open tool</a>
-                </article>
+      <!-- PDF -->
+      <article class="card">
+        <h2>PDF Merger</h2>
+        <p>Combine multiple PDFs entirely in your browser.</p>
+        <div class="row">
+          <a class="cta" href="/tools/pdf-merge.html">Open</a>
+          <span class="muted">No uploads</span>
+        </div>
+      </article>
 
-                <article class="card">
-                    <h3>CSV ↔ JSON</h3>
-                    <p>Convert both ways, quotes handled.</p>
-                    <a class="btn" href="tools/csv-json.html">Open tool</a>
-                </article>
+      <!-- AUDIO / VIDEO (placeholders you can wire later) -->
+      <article class="card">
+        <h2>Extract Audio (Beta)</h2>
+        <p>Pull audio from a video locally (OGG/WAV/FLAC). MP3 via server mode later.</p>
+        <div class="row">
+          <a class="cta" href="/tools/audio-extract.html">Open</a>
+          <span class="muted">ffmpeg.wasm</span>
+        </div>
+      </article>
 
-                <!-- Audio Warning Note -->
-                <div class="audio-warning">
-                    NOTE: The audio tools below are temporarily unavailable due to a transition from external CDN JavaScripts. We're hosting them locally for better security and reliability—back soon!
-                </div>
+      <article class="card">
+        <h2>Audio Converter (Beta)</h2>
+        <p>Convert between WAV / FLAC / OGG on-device. MP3 coming.</p>
+        <div class="row">
+          <a class="cta" href="/tools/audio-convert.html">Open</a>
+          <span class="muted">On-device</span>
+        </div>
+      </article>
 
-                <article class="card">
-                    <h3>Audio Denoise</h3>
-                    <p>Reduce steady hiss on audio or video.</p>
-                    <a class="btn" href="tools/audio-denoise.html">Open tool (coming soon)</a>
-                </article>
+      <article class="card">
+        <h2>Video → GIF/WebP (Beta)</h2>
+        <p>Make lightweight loops; ideal for previews and memes.</p>
+        <div class="row">
+          <a class="cta" href="/tools/video-gif.html">Open</a>
+          <span class="muted">Experimental</span>
+        </div>
+      </article>
+    </main>
 
-                <article class="card">
-                    <h3>Audio Trim</h3>
-                    <p>Cut a clip by start + duration. Local only.</p>
-                    <a class="btn" href="tools/audio-trim.html">Open tool (coming soon)</a>
-                </article>
+    <footer>
+      <p>Privacy: Tools run locally in your browser. For heavy AV tasks we’ll later offer an optional server mode.</p>
+      <p class="muted">© Apollonian Eye • Be seen.</p>
+    </footer>
+  </div>
 
-                <article class="card">
-                    <h3>Audio Converter</h3>
-                    <p>MP3/WAV/FLAC — all in your browser.</p>
-                    <a class="btn" href="tools/audio-convert.html">Open tool (coming soon)</a>
-                </article>
+  <script>
+    // Three-state theme toggle: Auto (default), Light, Dark.
+    // Auto uses CSS: desktop light, mobile dark (via media query).
+    (function themeToggle(){
+      const root = document.documentElement;
+      const btn = document.getElementById('themeToggle');
+      const label = document.getElementById('themeLabel');
+      const icon = document.getElementById('themeIcon');
 
-                <article class="card">
-                    <h3>Video → Audio</h3>
-                    <p>Extract audio as MP3, WAV, M4A or OGG.</p>
-                    <a class="btn" href="tools/video-to-audio.html">Open tool (coming soon)</a>
-                </article>
+      const ICONS = {
+        auto: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4a8 8 0 1 0 8 8 6 6 0 0 1-8-8z"/></svg>', // half-moon-ish
+        light:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.76 4.84l-1.8-1.79L3.17 4.84l1.79 1.8 1.8-1.8zm10.48 0l1.8-1.79 1.79 1.79-1.79 1.8-1.8-1.8zM12 2h0v3h0V2zm0 17h0v3h0v-3zM2 12h3v0H2v0zm17 0h3v0h-3v0zM6.76 19.16l-1.8 1.8L3.17 19.16l1.79-1.8 1.8 1.8zm10.48 0l1.8 1.8 1.79-1.8-1.79-1.8-1.8 1.8zM12 6a6 6 0 1 0 .001 12A6 6 0 0 0 12 6z"/></svg>',
+        dark: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/></svg>'
+      };
 
-                <article class="card">
-                    <h3>Video Converter</h3>
-                    <p>WebM (VP9/Opus) or MP4 (if supported).</p>
-                    <a class="btn" href="tools/video-convert.html">Open tool (coming soon)</a>
-                </article>
-            </div>
-        </section>
+      function apply(mode){
+        // mode: 'auto' | 'light' | 'dark'
+        if(mode==='light'){ root.setAttribute('data-theme','light'); }
+        else if(mode==='dark'){ root.setAttribute('data-theme','dark'); }
+        else { root.removeAttribute('data-theme'); } // auto
+        label.textContent = mode[0].toUpperCase()+mode.slice(1);
+        icon.innerHTML = ICONS[mode];
+        localStorage.setItem('theme', mode);
+        // Update meta theme-color to match background for nicer mobile UI bars
+        const metaDark = document.querySelector('meta[media="(max-width:800px)"][name="theme-color"]');
+        const metaLight = document.querySelector('meta[media="(min-width:801px)"][name="theme-color"]');
+        if(mode==='light'){ metaDark.setAttribute('content','#ffffff'); metaLight.setAttribute('content','#ffffff'); }
+        else if(mode==='dark'){ metaDark.setAttribute('content','#0b0b0d'); metaLight.setAttribute('content','#0b0b0d'); }
+        else { metaDark.setAttribute('content','#0b0b0d'); metaLight.setAttribute('content','#ffffff'); }
+      }
 
-        <footer class="site">
-            <div>
-                © <span id="y"></span> Utility Kit. 
-                <span class="small">Made for humans, not marketing bots.</span><br>
-                <a href="about.html">About</a> · 
-                <a href="contact.html">Contact</a> · 
-                <a href="privacy.html">Privacy</a><br><br>
-                <a class="btn" href="https://www.apollonianeye.uk" target="_blank" rel="noopener">
-                    Visit ApollonianEye.uk
-                </a>
-            </div>
-        </footer>
+      function next(mode){ return mode==='auto' ? 'light' : mode==='light' ? 'dark' : 'auto'; }
 
-        <!-- Bottom AdSense block (swap in real slot ID) -->
-        <section style="margin:30px 0; text-align:center;">
-            <ins class="adsbygoogle"
-                 style="display:block"
-                 data-ad-client="ca-pub-2381000819704004"
-                 data-ad-slot="YOUR_SLOT_ID"
-                 data-ad-format="auto"
-                 data-full-width-responsive="true"></ins>
-            <script>
-                (adsbygoogle = window.adsbygoogle || []).push({});
-            </script>
-        </section>
+      let current = localStorage.getItem('theme') || 'auto';
+      apply(current);
 
-        <script>
-            document.getElementById('y').textContent = new Date().getFullYear();
-        </script>
-    </div>
+      btn.addEventListener('click', ()=>{
+        current = next(current);
+        apply(current);
+      });
+    })();
+  </script>
 </body>
 </html>
-
