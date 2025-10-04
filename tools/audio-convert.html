@@ -6,8 +6,8 @@
 <link rel="icon" href="../assets/favicon.svg">
 <link rel="stylesheet" href="../assets/theme.css">
 <link rel="stylesheet" href="../assets/styles.css">
-<!-- FFmpeg via reliable jsDelivr CDN -->
-<script defer src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
+<!-- FFmpeg local scripts -->
+<script defer src="/vendor/ffmpeg/ffmpeg.min.js"></script>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2381000819704004"
           crossorigin="anonymous"></script>
 </head>
@@ -74,29 +74,31 @@ goBtn.onclick = async () => {
     // Lazy-load FFmpeg if not already done
     if (!ffmpeg) {
       log.textContent = 'Loading engine... (this may take 10-30s first time)';
-      if (typeof createFFmpeg === 'undefined' || typeof fetchFile === 'undefined') {
-        throw new Error('FFmpeg library not loaded from CDN. Check your internet or try refreshing the page.');
+      if (typeof FFmpegWASM === 'undefined') {
+        throw new Error('FFmpeg library not loaded. Check your connection or refresh the page.');
       }
-      const { createFFmpeg, fetchFile } = FFmpeg;
-      ffmpeg = createFFmpeg({ 
-        log: false,
-        corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd/ffmpeg-core.js'
+      const { FFmpeg } = FFmpegWASM;
+      ffmpeg = new FFmpeg();
+      await ffmpeg.load({
+        coreURL: '/vendor/ffmpeg/ffmpeg-core.wasm',
+        workerURL: '/vendor/ffmpeg/ffmpeg-worker.js'
       });
-      await ffmpeg.load();
       log.textContent = 'Engine loaded! Now converting...';
     }
 
     log.textContent = 'Converting... (this may take a few seconds)';
-    ffmpeg.FS('writeFile', 'in', await fetchFile(file));
+    // Use fetchFile if available, or manual fetch
+    const fetchFile = (file) => fetch(file).then(res => res.arrayBuffer()).then(ab => new Uint8Array(ab));
+    await ffmpeg.writeFile('in', await fetchFile(file));
     if (ext === 'mp3') {
       const bps = Math.max(96, Math.min(320, parseInt(br.value || 192))) + 'k';
-      await ffmpeg.run('-i', 'in', '-codec:a', 'libmp3lame', '-b:a', bps, target);
+      await ffmpeg.exec(['-i', 'in', '-codec:a', 'libmp3lame', '-b:a', bps, target]);
     } else if (ext === 'wav') {
-      await ffmpeg.run('-i', 'in', '-codec:a', 'pcm_s16le', target);
+      await ffmpeg.exec(['-i', 'in', '-codec:a', 'pcm_s16le', target]);
     } else if (ext === 'flac') {
-      await ffmpeg.run('-i', 'in', '-codec:a', 'flac', '-compression_level', '5', target);
+      await ffmpeg.exec(['-i', 'in', '-codec:a', 'flac', '-compression_level', '5', target]);
     }
-    const data = ffmpeg.FS('readFile', target);
+    const data = await ffmpeg.readFile(target);
     const blob = new Blob([data.buffer], { 
       type: (ext === 'mp3' ? 'audio/mpeg' : (ext === 'wav' ? 'audio/wav' : 'audio/flac')) 
     });
@@ -113,8 +115,8 @@ goBtn.onclick = async () => {
     // Clean up files if loaded
     if (ffmpeg && ffmpeg.isLoaded()) {
       try {
-        ffmpeg.FS('unlink', 'in');
-        ffmpeg.FS('unlink', target);
+        await ffmpeg.deleteFile('in');
+        await ffmpeg.deleteFile(target);
       } catch {} // Ignore cleanup errors
     }
   }
