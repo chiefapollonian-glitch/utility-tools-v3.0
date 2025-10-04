@@ -1,100 +1,40 @@
-whoops I accidentally turned the contact page into the about page, can you fix up the contact page?
-
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>About — Utility Tools</title>
+  <title>Contact — Utility Tools</title>
   <link rel="icon" href="assets/favicon.svg">
   <link rel="stylesheet" href="assets/theme.css">
   <link rel="stylesheet" href="assets/styles.css">
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2381000819704004" crossorigin="anonymous"></script>
+
   <style>
     :root {
-        --bg-color: #ffffff !important;
-        --text-color: #333333 !important;
-        --card-bg: #f9f9f9 !important;
-        --border-color: #e0e0e0 !important;
-        --header-bg: #ffffff !important;
-        --badge-bg: #f0f0f0 !important;
-        --btn-bg: #007bff !important;
-        --btn-hover: #0056b3 !important;
-        --hero-text: #333333 !important;
-        --hero-bg: #ffffff !important;
+      --bg-color:#ffffff !important; --text-color:#333 !important; --card-bg:#f9f9f9 !important;
+      --border-color:#e0e0e0 !important; --header-bg:#fff !important; --badge-bg:#f0f0f0 !important;
+      --btn-bg:#007bff !important; --btn-hover:#0056b3 !important; --hero-text:#333 !important; --hero-bg:#fff !important;
     }
     [data-theme="dark"] {
-        --bg-color: #1a1a1a !important;
-        --text-color: #f0f0f0 !important;
-        --card-bg: #2a2a2a !important;
-        --border-color: #404040 !important;
-        --header-bg: #2a2a2a !important;
-        --badge-bg: #404040 !important;
-        --btn-bg: #0d6efd !important;
-        --btn-hover: #0b5ed7 !important;
-        --hero-text: #f0f0f0 !important;
-        --hero-bg: #1a1a1a !important;
+      --bg-color:#1a1a1a !important; --text-color:#f0f0f0 !important; --card-bg:#2a2a2a !important;
+      --border-color:#404040 !important; --header-bg:#2a2a2a !important; --badge-bg:#404040 !important;
+      --btn-bg:#0d6efd !important; --btn-hover:#0b5ed7 !important; --hero-text:#f0f0f0 !important; --hero-bg:#1a1a1a !important;
     }
-    body {
-        background-color: var(--bg-color) !important;
-        color: var(--text-color) !important;
-        transition: background-color 0.3s ease, color 0.3s ease;
+    body{ background:var(--bg-color)!important; color:var(--text-color)!important; transition:.3s }
+    header.site, footer.site{ background:var(--header-bg)!important; border-color:var(--border-color)!important }
+    .hero{ background:var(--hero-bg)!important; color:var(--hero-text)!important }
+    .btn{ background:var(--btn-bg)!important } .btn:hover{ background:var(--btn-hover)!important }
+    .contact-card{ background:var(--card-bg); border:1px solid var(--border-color); border-radius:16px; padding:16px }
+    .form-row{ margin:10px 0 }
+    .form-row label{ display:block; margin-bottom:6px; color:var(--text-color) }
+    .form-row input,.form-row textarea, .form-row select{
+      width:100%; background:var(--bg-color); color:var(--text-color);
+      border:1px solid var(--border-color); border-radius:12px; padding:10px;
     }
-    .hero {
-        background-color: var(--hero-bg) !important;
-        color: var(--hero-text) !important;
-        transition: background-color 0.3s ease, color 0.3s ease;
-    }
-    .hero h1, .hero p {
-        color: var(--hero-text) !important;
-        transition: color 0.3s ease;
-    }
-    .hero h1 {
-        background: none !important;
-        line-height: 1.2;
-        font-weight: 700;
-    }
-    .hero p {
-        line-height: 1.5;
-    }
-    .card {
-        background-color: var(--card-bg) !important;
-        border: 1px solid var(--border-color) !important;
-        transition: background-color 0.3s ease, border-color 0.3s ease;
-    }
-    .badge {
-        background-color: var(--badge-bg) !important;
-        color: var(--text-color) !important;
-    }
-    .btn {
-        background-color: var(--btn-bg) !important;
-        transition: background-color 0.3s ease;
-    }
-    .btn:hover {
-        background-color: var(--btn-hover) !important;
-    }
-    header.site {
-        background-color: var(--header-bg) !important;
-        border-bottom: 1px solid var(--border-color) !important;
-    }
-    .section {
-        background-color: var(--bg-color) !important;
-        color: var(--text-color) !important;
-        transition: background-color 0.3s ease, color 0.3s ease;
-    }
-    .section h2, .section p {
-        color: var(--text-color) !important;
-    }
-    .section a {
-        color: var(--btn-bg) !important;
-    }
-    footer.site {
-        background-color: var(--header-bg) !important;
-        color: var(--text-color) !important;
-        border-top: 1px solid var(--border-color) !important;
-    }
-    footer.site a {
-        color: var(--btn-bg) !important;
-    }
+    .note{ font-size:.95rem; color:var(--text-color); opacity:.8 }
+    .alert{ border-radius:12px; padding:10px 12px; margin-top:12px }
+    .alert.ok{ background:#eafaf0; border:1px solid #b7efc5; color:#145a2b }
+    .alert.err{ background:#fdecec; border:1px solid #f5b5b5; color:#7a1e1e }
+    .row-actions{ display:flex; gap:10px; flex-wrap:wrap; align-items:center }
   </style>
 </head>
 <body data-theme="light">
@@ -102,22 +42,47 @@ whoops I accidentally turned the contact page into the about page, can you fix u
     <header class="site"><a class="brand" href="index.html">← Utility Tools</a></header>
 
     <section class="hero">
-      <h1>About</h1>
-      <p>Simple, private, in-browser tools. Made for humans, not by marketing bots.</p>
+      <h1>Contact Us</h1>
+      <p>Have a question, request, or bug report? Use the form below or email us at
+        <a href="mailto:chief.apollonian@gmail.com">chief.apollonian@gmail.com</a>.
+      </p>
     </section>
 
     <section class="section">
-      <h2>What this is</h2>
-      <p><strong>Utility Tools by The Apollonian Eye</strong> is a small arsenal of web utilities that run entirely in your browser: text transforms, image compression/formatting, audio/PDF tweaks.</p>
+      <div class="contact-card">
+        <form id="contactForm" action="https://formspree.io/f/mzzangaz" method="POST">
+          <!-- Honeypot -->
+          <input type="text" name="_gotcha" style="display:none">
 
-      <h2>Why it exists</h2>
-      <p>Because most “free tools” sites are slow, noisy, or invasive. We prefer fast pages, clean UI, and files that <em>never</em> leave your device.</p>
+          <div class="form-row">
+            <label for="name">Name</label>
+            <input id="name" name="name" type="text" placeholder="Your name" required>
+          </div>
 
-      <h2>Open source</h2>
-      <p>Parts of this site are open source. Code: <a href="https://github.com/CHOOSE-YOUR-PATH" target="_blank" rel="noopener">GitHub</a>.</p>
+          <div class="form-row">
+            <label for="email">Your Email</label>
+            <input id="email" name="email" type="email" placeholder="you@example.com" required>
+          </div>
 
-      <h2>Contact</h2>
-      <p>Email: <a href="mailto:chief.apollonian@gmail.com">chief.apollonian@gmail.com</a></p>
+          <div class="form-row">
+            <label for="subject">Subject</label>
+            <input id="subject" name="subject" type="text" placeholder="What’s this about?" required>
+          </div>
+
+          <div class="form-row">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" rows="6" placeholder="Write your message here…" required></textarea>
+          </div>
+
+          <div class="row-actions">
+            <button class="btn" type="submit">Send</button>
+            <a class="button secondary" href="mailto:chief.apollonian@gmail.com?subject=Hello%20Utility%20Tools">Open email app</a>
+            <span class="note">We aim to reply within 1–2 business days.</span>
+          </div>
+
+          <div id="formAlert" class="alert" style="display:none"></div>
+        </form>
+      </div>
     </section>
 
     <footer class="site">
@@ -126,19 +91,39 @@ whoops I accidentally turned the contact page into the about page, can you fix u
   </div>
 
   <script>
-    // Apply theme from localStorage/OS preference (no toggle)
-    document.addEventListener('DOMContentLoaded', () => {
-        const html = document.documentElement;
+    // Theme from storage / OS
+    (function(){
+      const html=document.documentElement;
+      const saved=localStorage.getItem('theme');
+      const prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;
+      html.setAttribute('data-theme', (saved==='dark'||(!saved&&prefersDark)) ? 'dark' : 'light');
+    })();
 
-        // Check for saved theme preference or OS preference
-        const savedTheme = localStorage.getItem('theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // Formspree AJAX (stay on page, show message)
+    const form = document.getElementById('contactForm');
+    const alertBox = document.getElementById('formAlert');
 
-        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-            html.setAttribute('data-theme', 'dark');
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      alertBox.style.display='none';
+
+      const data = new FormData(form);
+      try{
+        const res = await fetch(form.action, { method:'POST', body:data, headers:{ 'Accept':'application/json' } });
+        if (res.ok){
+          alertBox.className='alert ok';
+          alertBox.textContent='Thanks! Your message has been sent.';
+          alertBox.style.display='block';
+          form.reset();
         } else {
-            html.setAttribute('data-theme', 'light');
+          const j = await res.json().catch(()=>({}));
+          throw new Error(j?.error || 'Submission failed. Please try again later.');
         }
+      }catch(err){
+        alertBox.className='alert err';
+        alertBox.textContent=err.message || 'Error sending message.';
+        alertBox.style.display='block';
+      }
     });
   </script>
 </body>
