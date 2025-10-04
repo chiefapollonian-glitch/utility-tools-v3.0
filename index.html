@@ -76,7 +76,22 @@
         }
         header.site {
             background-color: var(--header-bg);
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: none; /* Remove visible box border */
+            transition: background-color 0.3s ease;
+        }
+        .brand {
+            color: var(--text-color); /* Ensure byline text inverts with theme */
+            transition: color 0.3s ease;
+        }
+        /* Logo text inversion (targets SVG text inside .logo img) */
+        .logo text {
+            transition: fill 0.3s ease;
+        }
+        [data-theme="light"] .logo text {
+            fill: #1a202c !important; /* Dark text on light */
+        }
+        [data-theme="dark"] .logo text {
+            fill: #F3F6FA !important; /* Light text on dark */
         }
         #theme-toggle {
             position: absolute;
@@ -107,7 +122,7 @@
     <div class="container">
         <header class="site">
             <button id="theme-toggle" aria-label="Toggle theme">🌙</button>
-            <img class="logo" src="assets/logo.svg" alt="Utility Tools logo" style="width: 120px; height: auto;">
+            <img class="logo" src="assets/logo.svg" alt="Utility Tools logo" style="width: 2000px; height: auto;">
             <div class="brand">by www.apollonianeye.uk</div>
         </header>
 
@@ -279,7 +294,3 @@
     </div>
 </body>
 </html>
-
-
-
-
