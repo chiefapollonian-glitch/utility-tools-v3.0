@@ -1,57 +1,142 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Best free online image converter: PNG to JPG, WebP instantly—no account, no signup, no popups, no viruses, no file size limits, no scams, no fuss. Local browser processing!">
   <title>Image Converter (updated) — Apollonian Eye Tools</title>
-  <meta name="description" content="Convert images in your browser to PNG, JPEG, or WebP. Private, fast, no upload." />
+  <link rel="icon" href="assets/favicon.svg">
+  <link rel="stylesheet" href="assets/theme.css">
+  <link rel="stylesheet" href="assets/styles.css">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2381000819704004" crossorigin="anonymous"></script>
   <style>
     :root {
-      --bg:#0b0b0d; --fg:#e7e7ea; --muted:#9aa0a6; --brand:#e11d48; --card:#15161a; --line:#23252b;
-      --ok:#22c55e; --warn:#f59e0b; --err:#ef4444;
+      --bg: #ffffff;
+      --fg: #333333;
+      --muted: #666666;
+      --brand: #e11d48;
+      --card: #f9f9f9;
+      --line: #e0e0e0;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --err: #ef4444;
     }
-    html,body{background:var(--bg); color:var(--fg); font:16px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif; margin:0}
-    a{color:var(--fg)}
-    .wrap{max-width:980px;margin:32px auto;padding:0 16px}
-    header{display:flex;align-items:center;gap:14px;margin-bottom:18px}
-    header .dot{width:10px;height:10px;border-radius:50%;background:var(--brand)}
-    h1{font-size:1.6rem;margin:0}
-    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
-    .grid{display:grid;gap:16px}
-    @media(min-width:900px){.grid-2{grid-template-columns:1fr 1fr}}
-    .drop{
-      border:2px dashed var(--line); border-radius:14px; padding:22px; text-align:center; background:#0f1014;
+    [data-theme="dark"] {
+      --bg: #0b0b0d;
+      --fg: #e7e7ea;
+      --muted: #9aa0a6;
+      --brand: #e11d48;
+      --card: #15161a;
+      --line: #23252b;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --err: #ef4444;
+    }
+    html, body {
+      background: var(--bg);
+      color: var(--fg);
+      font: 16px/1.45 system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    a { color: var(--fg); }
+    .wrap { max-width: 980px; margin: 32px auto; padding: 0 16px; }
+    header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+    header .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--brand); }
+    h1 { font-size: 1.6rem; margin: 0; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+    .grid { display: grid; gap: 16px; }
+    @media (min-width: 900px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+    .drop {
+      border: 2px dashed var(--line);
+      border-radius: 14px;
+      padding: 22px;
+      text-align: center;
+      background: #f0f0f0; /* Light default */
       transition: border-color .15s ease, background .15s ease;
     }
-    .drop.drag{border-color:var(--brand); background:#101116}
-    .muted{color:var(--muted); font-size:.9rem}
-    .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-top:12px}
-    .field{display:flex;flex-direction:column;gap:6px;min-width:180px}
-    label{font-size:.85rem;color:var(--muted)}
-    select,input[type="file"],input[type="color"],input[type="range"]{
-      background:#0f1014;color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:10px
+    [data-theme="dark"] .drop { background: #0f1014; }
+    .drop.drag { border-color: var(--brand); background: #e0e0e0; }
+    [data-theme="dark"] .drop.drag { background: #101116; }
+    .muted { color: var(--muted); font-size: .9rem; }
+    .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-top: 12px; }
+    .field { display: flex; flex-direction: column; gap: 6px; min-width: 180px; }
+    label { font-size: .85rem; color: var(--muted); }
+    select, input[type="file"], input[type="color"], input[type="range"] {
+      background: #f0f0f0; /* Light default */
+      color: var(--fg);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
     }
-    input[type="range"]{padding:6px}
-    .btn{
-      background:var(--brand); color:#fff; border:0; border-radius:12px; padding:12px 16px; cursor:pointer; font-weight:600;
+    [data-theme="dark"] select, [data-theme="dark"] input[type="file"], [data-theme="dark"] input[type="color"], [data-theme="dark"] input[type="range"] { background: #0f1014; }
+    input[type="range"] { padding: 6px; }
+    .btn {
+      background: var(--brand);
+      color: #fff;
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 16px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background-color 0.3s ease;
     }
-    .btn[disabled]{opacity:.6; cursor:not-allowed}
-    .btn.secondary{background:#0f1014;border:1px solid var(--line);color:var(--fg)}
-    .previews{display:grid;gap:14px}
-    @media(min-width:900px){.previews{grid-template-columns:1fr 1fr}}
-    .pane{background:#0f1014;border:1px solid var(--line);border-radius:14px;padding:12px}
-    .pane h3{margin:0 0 8px 0;font-size:1rem;color:#c9cad0}
-    .imgbox{display:grid;place-items:center;aspect-ratio:1.4/1;background:#0b0c10;border-radius:10px;overflow:auto}
-    .imgbox img{max-width:100%;max-height:420px;display:block}
-    .meta{display:flex;justify-content:space-between;gap:10px;margin-top:8px;color:var(--muted);font-size:.85rem}
-    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}
-    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:#111217;border:1px solid var(--line);font-size:.9rem}
-    .ok{color:var(--ok)} .warn{color:var(--warn)} .err{color:var(--err)}
-    footer{color:var(--muted);font-size:.85rem;margin:24px 0}
-    .hidden{display:none !important}
+    .btn[disabled] { opacity: .6; cursor: not-allowed; }
+    .btn.secondary {
+      background: #f0f0f0; /* Light default */
+      border: 1px solid var(--line);
+      color: var(--fg);
+    }
+    [data-theme="dark"] .btn.secondary { background: #0f1014; }
+    .previews { display: grid; gap: 14px; }
+    @media (min-width: 900px) { .previews { grid-template-columns: 1fr 1fr; } }
+    .pane {
+      background: #f0f0f0; /* Light default */
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+    [data-theme="dark"] .pane { background: #0f1014; }
+    .pane h3 { margin: 0 0 8px 0; font-size: 1rem; color: #c9cad0; }
+    .imgbox {
+      display: grid;
+      place-items: center;
+      aspect-ratio: 1.4/1;
+      background: #f8f9fa; /* Light default */
+      border-radius: 10px;
+      overflow: auto;
+      transition: background-color 0.3s ease;
+    }
+    [data-theme="dark"] .imgbox { background: #0b0c10; }
+    .imgbox img { max-width: 100%; max-height: 420px; display: block; }
+    .meta { display: flex; justify-content: space-between; gap: 10px; margin-top: 8px; color: var(--muted); font-size: .85rem; }
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: space-between; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #f0f0f0; /* Light default */
+      border: 1px solid var(--line);
+      font-size: .9rem;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+    [data-theme="dark"] .pill { background: #111217; }
+    .ok { color: var(--ok); } .warn { color: var(--warn); } .err { color: var(--err); }
+    footer { color: var(--muted); font-size: .85rem; margin: 24px 0; }
+    .hidden { display: none !important; }
   </style>
 </head>
-<body>
+<body data-theme="light">
   <div class="wrap">
     <header>
       <div class="dot"></div>
@@ -59,41 +144,43 @@
     </header>
 
     <div class="card">
-      <p class="muted">All processing happens <strong>in your browser</strong>. Nothing uploads.</p>
+      <p class="muted">Best free online image converter: PNG to JPG, WebP instantly—no account, no signup, no popups, no viruses, no file size limits, no scams, no fuss. Local browser processing with light/dark mode for eye comfort!</p>
+    </div>
 
-      <div id="drop" class="drop" tabindex="0" role="button" aria-label="Drop image here or click to choose">
+    <div class="card">
+      <div class="drop" id="drop" tabindex="0" role="button" aria-label="Drop image here or click to choose">
         <input id="file" type="file" accept="image/*" class="hidden" />
         <div><strong>Drop an image</strong> or click to choose.</div>
         <div class="muted" style="margin-top:6px">PNG · JPEG · WebP · (others depend on your browser)</div>
       </div>
+    </div>
 
-      <div class="controls">
-        <div class="field">
-          <label for="format">Output format</label>
-          <select id="format">
-            <option value="webp">WebP (modern, small)</option>
-            <option value="jpeg">JPEG</option>
-            <option value="png">PNG (lossless)</option>
-            <!-- AVIF is great but not on all browsers; we detect support before enabling -->
-            <option value="avif">AVIF (experimental)</option>
-          </select>
-        </div>
-
-        <div class="field" id="qualityWrap">
-          <label for="quality">Quality: <span id="qVal">90</span></label>
-          <input id="quality" type="range" min="1" max="100" step="1" value="90" />
-        </div>
-
-        <div class="field" id="bgWrap">
-          <label for="bg">JPEG background (for transparent images)</label>
-          <input id="bg" type="color" value="#000000" />
-        </div>
-
-        <div style="flex:1 1 auto"></div>
-
-        <button id="convert" class="btn" disabled>Convert</button>
-        <button id="reset" class="btn secondary" disabled>Reset</button>
+    <div class="controls" id="controls" style="display:none">
+      <div class="field">
+        <label for="format">Output format</label>
+        <select id="format">
+          <option value="webp">WebP (modern, small)</option>
+          <option value="jpeg">JPEG</option>
+          <option value="png">PNG (lossless)</option>
+          <!-- AVIF is great but not on all browsers; we detect support before enabling -->
+          <option value="avif">AVIF (experimental)</option>
+        </select>
       </div>
+
+      <div class="field" id="qualityWrap">
+        <label for="quality">Quality: <span id="qVal">90</span></label>
+        <input id="quality" type="range" min="1" max="100" step="1" value="90" />
+      </div>
+
+      <div class="field" id="bgWrap">
+        <label for="bg">JPEG background (for transparent images)</label>
+        <input id="bg" type="color" value="#000000" />
+      </div>
+
+      <div style="flex:1 1 auto"></div>
+
+      <button id="convert" class="btn" disabled>Convert</button>
+      <button id="reset" class="btn secondary" disabled>Reset</button>
     </div>
 
     <div class="grid grid-2" style="margin-top:16px">
@@ -123,6 +210,24 @@
       <div>Tip: PNG ignores quality; JPEG/WebP/AVIF use it. AVIF support varies by browser.</div>
     </footer>
   </div>
+
+  <!-- Theme apply script -->
+  <script>
+    // Apply theme from localStorage/OS preference (no toggle)
+    document.addEventListener('DOMContentLoaded', () => {
+        const html = document.documentElement;
+
+        // Check for saved theme preference or OS preference
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+            html.setAttribute('data-theme', 'dark');
+        } else {
+            html.setAttribute('data-theme', 'light');
+        }
+    });
+  </script>
 
   <script>
   (() => {
@@ -246,11 +351,11 @@
         revoke(outURL);
         outURL = URL.createObjectURL(blob);
         btnDownload.href = outURL;
-        const outName = originalFile.name.replace(/\.[^.]+$/, '') + '.' + (outFmt === 'jpeg' ? 'jpg' : outFmt);
+        const outName = originalFile.name.replace(/\.[^/.]+$/, '') + '.' + (outFmt === 'jpeg' ? 'jpg' : outFmt);
         btnDownload.download = outName;
         setHidden(btnDownload, false);
 
-        // 🔧 Update PREVIEW to the converted image (the bug fix)
+        // Update PREVIEW to the converted image
         imgOut.src = outURL;
 
         // Show type/size meta; dims same as input in this tool
@@ -309,4 +414,3 @@
   </script>
 </body>
 </html>
-
