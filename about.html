@@ -1,51 +1,49 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>About — Utility Tools</title>
   <link rel="icon" href="assets/favicon.svg">
   <link rel="stylesheet" href="assets/theme.css">
   <link rel="stylesheet" href="assets/styles.css">
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2381000819704004"
-          crossorigin="anonymous"></script>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2381000819704004" crossorigin="anonymous"></script>
   <style>
     :root {
-        --bg-color: #ffffff;
-        --text-color: #333333;
-        --card-bg: #f9f9f9;
-        --border-color: #e0e0e0;
-        --header-bg: #ffffff;
-        --badge-bg: #f0f0f0;
-        --btn-bg: #007bff;
-        --btn-hover: #0056b3;
-        --hero-text: #333333;
-        --hero-bg: #ffffff;
+        --bg-color: #ffffff !important;
+        --text-color: #333333 !important;
+        --card-bg: #f9f9f9 !important;
+        --border-color: #e0e0e0 !important;
+        --header-bg: #ffffff !important;
+        --badge-bg: #f0f0f0 !important;
+        --btn-bg: #007bff !important;
+        --btn-hover: #0056b3 !important;
+        --hero-text: #333333 !important;
+        --hero-bg: #ffffff !important;
     }
     [data-theme="dark"] {
-        --bg-color: #1a1a1a;
-        --text-color: #f0f0f0;
-        --card-bg: #2a2a2a;
-        --border-color: #404040;
-        --header-bg: #2a2a2a;
-        --badge-bg: #404040;
-        --btn-bg: #0d6efd;
-        --btn-hover: #0b5ed7;
-        --hero-text: #f0f0f0;
-        --hero-bg: #1a1a1a;
+        --bg-color: #1a1a1a !important;
+        --text-color: #f0f0f0 !important;
+        --card-bg: #2a2a2a !important;
+        --border-color: #404040 !important;
+        --header-bg: #2a2a2a !important;
+        --badge-bg: #404040 !important;
+        --btn-bg: #0d6efd !important;
+        --btn-hover: #0b5ed7 !important;
+        --hero-text: #f0f0f0 !important;
+        --hero-bg: #1a1a1a !important;
     }
     body {
-        background-color: var(--bg-color);
-        color: var(--text-color);
+        background-color: var(--bg-color) !important;
+        color: var(--text-color) !important;
         transition: background-color 0.3s ease, color 0.3s ease;
     }
     .hero {
-        background-color: var(--hero-bg);
-        color: var(--hero-text);
+        background-color: var(--hero-bg) !important;
+        color: var(--hero-text) !important;
         transition: background-color 0.3s ease, color 0.3s ease;
     }
     .hero h1, .hero p {
-        color: var(--hero-text);
+        color: var(--hero-text) !important;
         transition: color 0.3s ease;
     }
     .hero h1 {
@@ -57,28 +55,47 @@
         line-height: 1.5;
     }
     .card {
-        background-color: var(--card-bg);
-        border: 1px solid var(--border-color);
+        background-color: var(--card-bg) !important;
+        border: 1px solid var(--border-color) !important;
         transition: background-color 0.3s ease, border-color 0.3s ease;
     }
     .badge {
-        background-color: var(--badge-bg);
-        color: var(--text-color);
+        background-color: var(--badge-bg) !important;
+        color: var(--text-color) !important;
     }
     .btn {
-        background-color: var(--btn-bg);
+        background-color: var(--btn-bg) !important;
         transition: background-color 0.3s ease;
     }
     .btn:hover {
-        background-color: var(--btn-hover);
+        background-color: var(--btn-hover) !important;
     }
     header.site {
-        background-color: var(--header-bg);
-        border-bottom: 1px solid var(--border-color);
+        background-color: var(--header-bg) !important;
+        border-bottom: 1px solid var(--border-color) !important;
     }
-</style>
+    .section {
+        background-color: var(--bg-color) !important;
+        color: var(--text-color) !important;
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    .section h2, .section p {
+        color: var(--text-color) !important;
+    }
+    .section a {
+        color: var(--btn-bg) !important;
+    }
+    footer.site {
+        background-color: var(--header-bg) !important;
+        color: var(--text-color) !important;
+        border-top: 1px solid var(--border-color) !important;
+    }
+    footer.site a {
+        color: var(--btn-bg) !important;
+    }
+  </style>
 </head>
-<body>
+<body data-theme="light">
   <div class="container">
     <header class="site"><a class="brand" href="index.html">← Utility Tools</a></header>
 
@@ -95,16 +112,17 @@
       <p>Because most “free tools” sites are slow, noisy, or invasive. We prefer fast pages, clean UI, and files that <em>never</em> leave your device.</p>
 
       <h2>Open source</h2>
-      <p>Parts of this site are open source. Code: <a href="https://github.com/chiefapollonian-glitch/utility-tools-v3.0" target="_blank" rel="noopener">GitHub</a>.</p>
+      <p>Parts of this site are open source. Code: <a href="https://github.com/CHOOSE-YOUR-PATH" target="_blank" rel="noopener">GitHub</a>.</p>
 
       <h2>Contact</h2>
       <p>Email: <a href="mailto:chief.apollonian@gmail.com">chief.apollonian@gmail.com</a></p>
     </section>
 
     <footer class="site">
-      <a href="index.html">Home</a> · <a href="about.html">About</a> · <a href="privacy.html">Privacy</a>
+      <a href="index.html">Home</a> · <a href="about.html">About</a> · <a href="privacy.html">Privacy</a> · <a href="contact.html">Contact</a>
     </footer>
   </div>
+
   <script>
     // Apply theme from localStorage/OS preference (no toggle)
     document.addEventListener('DOMContentLoaded', () => {
@@ -120,9 +138,6 @@
             html.setAttribute('data-theme', 'light');
         }
     });
-</script>
+  </script>
 </body>
 </html>
-
-
-
