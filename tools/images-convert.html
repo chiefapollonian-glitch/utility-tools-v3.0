@@ -1,89 +1,311 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Image Converter — PNG • JPG • WebP</title>
-<link rel="icon" href="../assets/favicon.svg">
-<link rel="stylesheet" href="../assets/theme.css">
-<link rel="stylesheet" href="../assets/styles.css">
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2381000819704004"
-          crossorigin="anonymous"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Image Converter — Apollonian Eye Tools</title>
+  <meta name="description" content="Convert images in your browser to PNG, JPEG, or WebP. Private, fast, no upload." />
+  <style>
+    :root {
+      --bg:#0b0b0d; --fg:#e7e7ea; --muted:#9aa0a6; --brand:#e11d48; --card:#15161a; --line:#23252b;
+      --ok:#22c55e; --warn:#f59e0b; --err:#ef4444;
+    }
+    html,body{background:var(--bg); color:var(--fg); font:16px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif; margin:0}
+    a{color:var(--fg)}
+    .wrap{max-width:980px;margin:32px auto;padding:0 16px}
+    header{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+    header .dot{width:10px;height:10px;border-radius:50%;background:var(--brand)}
+    h1{font-size:1.6rem;margin:0}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+    .grid{display:grid;gap:16px}
+    @media(min-width:900px){.grid-2{grid-template-columns:1fr 1fr}}
+    .drop{
+      border:2px dashed var(--line); border-radius:14px; padding:22px; text-align:center; background:#0f1014;
+      transition: border-color .15s ease, background .15s ease;
+    }
+    .drop.drag{border-color:var(--brand); background:#101116}
+    .muted{color:var(--muted); font-size:.9rem}
+    .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-top:12px}
+    .field{display:flex;flex-direction:column;gap:6px;min-width:180px}
+    label{font-size:.85rem;color:var(--muted)}
+    select,input[type="file"],input[type="color"],input[type="range"]{
+      background:#0f1014;color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:10px
+    }
+    input[type="range"]{padding:6px}
+    .btn{
+      background:var(--brand); color:#fff; border:0; border-radius:12px; padding:12px 16px; cursor:pointer; font-weight:600;
+    }
+    .btn[disabled]{opacity:.6; cursor:not-allowed}
+    .btn.secondary{background:#0f1014;border:1px solid var(--line);color:var(--fg)}
+    .previews{display:grid;gap:14px}
+    @media(min-width:900px){.previews{grid-template-columns:1fr 1fr}}
+    .pane{background:#0f1014;border:1px solid var(--line);border-radius:14px;padding:12px}
+    .pane h3{margin:0 0 8px 0;font-size:1rem;color:#c9cad0}
+    .imgbox{display:grid;place-items:center;aspect-ratio:1.4/1;background:#0b0c10;border-radius:10px;overflow:auto}
+    .imgbox img{max-width:100%;max-height:420px;display:block}
+    .meta{display:flex;justify-content:space-between;gap:10px;margin-top:8px;color:var(--muted);font-size:.85rem}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:#111217;border:1px solid var(--line);font-size:.9rem}
+    .ok{color:var(--ok)} .warn{color:var(--warn)} .err{color:var(--err)}
+    footer{color:var(--muted);font-size:.85rem;margin:24px 0}
+    .hidden{display:none !important}
+  </style>
 </head>
 <body>
-<div class="container">
-  <header class="site"><a class="brand" href="../index.html">← Utility Tools</a></header>
+  <div class="wrap">
+    <header>
+      <div class="dot"></div>
+      <h1>Image Converter</h1>
+    </header>
 
-  <h1 style="font-size:var(--h2-size);margin:6px 0 10px">Image Converter</h1>
-  <p class="small">Convert PNG/JPG/WEBP in your browser. Nothing is uploaded.</p>
+    <div class="card">
+      <p class="muted">All processing happens <strong>in your browser</strong>. Nothing uploads.</p>
 
-  <div class="section">
-    <label for="file">Choose image</label>
-    <input type="file" id="file" accept="image/png,image/jpeg,image/webp">
-    <div class="stack">
-      <label>Output format
-        <select id="fmt">
-          <option value="image/webp">WebP (.webp)</option>
-          <option value="image/jpeg">JPEG (.jpg)</option>
-          <option value="image/png">PNG (.png)</option>
-        </select>
-      </label>
-      <label>Quality <input id="q" type="range" min="0.5" max="0.95" step="0.05" value="0.8"></label>
-      <label id="bgwrap">JPG background <input id="bg" type="color" value="#0B0E12" style="vertical-align:middle"></label>
+      <div id="drop" class="drop" tabindex="0" role="button" aria-label="Drop image here or click to choose">
+        <input id="file" type="file" accept="image/*" class="hidden" />
+        <div><strong>Drop an image</strong> or click to choose.</div>
+        <div class="muted" style="margin-top:6px">PNG · JPEG · WebP · (others depend on your browser)</div>
+      </div>
+
+      <div class="controls">
+        <div class="field">
+          <label for="format">Output format</label>
+          <select id="format">
+            <option value="webp">WebP (modern, small)</option>
+            <option value="jpeg">JPEG</option>
+            <option value="png">PNG (lossless)</option>
+            <!-- AVIF is great but not on all browsers; we detect support before enabling -->
+            <option value="avif">AVIF (experimental)</option>
+          </select>
+        </div>
+
+        <div class="field" id="qualityWrap">
+          <label for="quality">Quality: <span id="qVal">90</span></label>
+          <input id="quality" type="range" min="1" max="100" step="1" value="90" />
+        </div>
+
+        <div class="field" id="bgWrap">
+          <label for="bg">JPEG background (for transparent images)</label>
+          <input id="bg" type="color" value="#000000" />
+        </div>
+
+        <div style="flex:1 1 auto"></div>
+
+        <button id="convert" class="btn" disabled>Convert</button>
+        <button id="reset" class="btn secondary" disabled>Reset</button>
+      </div>
     </div>
-    <div class="stack" style="margin-top:10px">
-      <button id="run">Convert</button>
-      <a id="dl" class="button secondary hidden" download>Download</a>
+
+    <div class="grid grid-2" style="margin-top:16px">
+      <div class="pane">
+        <h3>Original</h3>
+        <div class="imgbox"><img id="imgIn" alt="Original preview"></div>
+        <div class="meta">
+          <span id="inMeta">—</span>
+          <span class="pill" id="inType">—</span>
+        </div>
+      </div>
+
+      <div class="pane">
+        <div class="row">
+          <h3 style="margin:0">Converted</h3>
+          <a id="download" class="btn hidden" download>Download</a>
+        </div>
+        <div class="imgbox"><img id="imgOut" alt="Converted preview"></div>
+        <div class="meta">
+          <span id="outMeta">—</span>
+          <span class="pill" id="outType">—</span>
+        </div>
+      </div>
     </div>
-    <p id="info" class="small"></p>
-    <img id="preview" style="max-width:100%;margin-top:10px" alt="">
+
+    <footer>
+      <div>Tip: PNG ignores quality; JPEG/WebP/AVIF use it. AVIF support varies by browser.</div>
+    </footer>
   </div>
 
-  <footer class="site"><a href="../index.html">← Back to tools</a></footer>
-</div>
+  <script>
+  (() => {
+    const $ = (id) => document.getElementById(id);
 
-<script>
-const f = document.getElementById('file');
-const fmt = document.getElementById('fmt');
-const q = document.getElementById('q');
-const bg = document.getElementById('bg');
-const bgwrap = document.getElementById('bgwrap');
-const run = document.getElementById('run');
-const dl = document.getElementById('dl');
-const info = document.getElementById('info');
-const img = document.getElementById('preview');
+    // Elements
+    const drop = $('drop'), fileInput = $('file');
+    const imgIn = $('imgIn'), imgOut = $('imgOut');
+    const inMeta = $('inMeta'), outMeta = $('outMeta');
+    const inType = $('inType'), outType = $('outType');
+    const formatSel = $('format'), quality = $('quality'), qVal = $('qVal'), bg = $('bg');
+    const qualityWrap = $('qualityWrap'), bgWrap = $('bgWrap');
+    const btnConvert = $('convert'), btnReset = $('reset'), btnDownload = $('download');
 
-fmt.onchange = ()=> bgwrap.style.display = (fmt.value === 'image/jpeg') ? 'inline-block' : 'none';
-fmt.onchange();
+    // State
+    let originalFile = null;
+    let origURL = null, outURL = null;
 
-run.onclick = async () => {
-  if(!f.files[0]) return alert('Choose an image');
-  const file = f.files[0];
-  img.src = URL.createObjectURL(file);
+    // Utilities
+    function fmtBytes(n){
+      if (!Number.isFinite(n)) return '—';
+      const u=['B','KB','MB','GB']; let i=0; while(n>=1024&&i<u.length-1){n/=1024;i++}
+      return `${n.toFixed(i?1:0)} ${u[i]}`;
+    }
+    function revoke(url){ if (url) URL.revokeObjectURL(url); }
+    function setHidden(el, yes){ el.classList.toggle('hidden', !!yes); }
 
-  const bmp = await createImageBitmap(file);
-  const c = document.createElement('canvas');
-  c.width = bmp.width; c.height = bmp.height;
-  const x = c.getContext('2d');
+    // Feature detect AVIF; disable option if not supported
+    (function detectAVIF(){
+      const cvs = document.createElement('canvas');
+      const ok = cvs.toDataURL && cvs.toDataURL('image/avif').startsWith('data:image/avif');
+      if (!ok) {
+        for (const opt of formatSel.options) {
+          if (opt.value === 'avif') { opt.textContent = 'AVIF (not supported)'; opt.disabled = true; }
+        }
+      }
+    })();
 
-  if (fmt.value === 'image/jpeg') {
-    // Fill background to replace transparency when exporting JPEG
-    x.fillStyle = bg.value || '#0B0E12';
-    x.fillRect(0,0,c.width,c.height);
-  }
-  x.drawImage(bmp,0,0);
+    function updateControlsVisibility(){
+      const fmt = formatSel.value;
+      // Quality: used for jpeg/webp/avif, not png
+      qualityWrap.style.display = (fmt === 'png') ? 'none' : 'flex';
+      // Background color: only relevant for JPEG (no alpha)
+      bgWrap.style.display = (fmt === 'jpeg') ? 'flex' : 'none';
+    }
 
-  const quality = parseFloat(q.value);
-  const blob = await new Promise(r => c.toBlob(r, fmt.value, quality));
-  const ext = fmt.value === 'image/webp' ? 'webp' : (fmt.value === 'image/png' ? 'png' : 'jpg');
+    formatSel.addEventListener('change', updateControlsVisibility);
+    quality.addEventListener('input', () => qVal.textContent = quality.value);
 
-  dl.href = URL.createObjectURL(blob);
-  dl.download = (file.name.replace(/\.[^.]+$/, '') + '.' + ext);
-  dl.classList.remove('hidden');
+    // Drag & drop wiring
+    function preventDefaults(e){ e.preventDefault(); e.stopPropagation(); }
+    ['dragenter','dragover','dragleave','drop'].forEach(ev => drop.addEventListener(ev, preventDefaults));
+    ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, () => drop.classList.add('drag')));
+    ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, () => drop.classList.remove('drag')));
+    drop.addEventListener('click', () => fileInput.click());
+    drop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') fileInput.click(); });
+    drop.addEventListener('drop', (e) => {
+      const f = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) handleFile(f);
+    });
+    fileInput.addEventListener('change', (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (f) handleFile(f);
+    });
 
-  const kb = s => (s/1024).toFixed(1) + ' KB';
-  info.textContent = `Original ${kb(file.size)} → New ${kb(blob.size||0)} (${ext.toUpperCase()}, quality ${quality})`;
-};
-</script>
+    async function handleFile(file){
+      cleanupOutput();
+      originalFile = file;
+
+      revoke(origURL);
+      origURL = URL.createObjectURL(file);
+      imgIn.src = origURL;
+
+      // We’ll try to read dimensions via createImageBitmap (fast & respects most formats)
+      try {
+        const bmp = await createImageBitmap(file);
+        inMeta.textContent = `${bmp.width}×${bmp.height} • ${fmtBytes(file.size)}`;
+      } catch {
+        inMeta.textContent = `${fmtBytes(file.size)}`;
+      }
+      inType.textContent = file.type || 'unknown';
+      btnConvert.disabled = false;
+      btnReset.disabled = false;
+    }
+
+    function cleanupOutput(){
+      revoke(outURL);
+      outURL = null;
+      imgOut.removeAttribute('src');
+      outMeta.textContent = '—';
+      outType.textContent = '—';
+      setHidden(btnDownload, true);
+      btnDownload.removeAttribute('href');
+      btnDownload.removeAttribute('download');
+    }
+
+    btnReset.addEventListener('click', () => {
+      // Clear inputs & previews
+      fileInput.value = '';
+      originalFile = null;
+      revoke(origURL); origURL = null;
+      imgIn.removeAttribute('src');
+      inMeta.textContent = '—';
+      inType.textContent = '—';
+      cleanupOutput();
+      btnConvert.disabled = true;
+      btnReset.disabled = true;
+    });
+
+    async function convert(){
+      if (!originalFile) return;
+      btnConvert.disabled = true;
+      btnConvert.textContent = 'Converting…';
+
+      try {
+        const outFmt = formatSel.value;           // 'webp'|'jpeg'|'png'|'avif'
+        const q = Math.min(1, Math.max(0, (Number(quality.value)||90) / 100));
+        const blob = await convertImage(originalFile, outFmt, q, bg.value);
+
+        // Update download
+        revoke(outURL);
+        outURL = URL.createObjectURL(blob);
+        btnDownload.href = outURL;
+        const outName = originalFile.name.replace(/\.[^.]+$/, '') + '.' + (outFmt === 'jpeg' ? 'jpg' : outFmt);
+        btnDownload.download = outName;
+        setHidden(btnDownload, false);
+
+        // 🔧 Update PREVIEW to the converted image (the bug fix)
+        imgOut.src = outURL;
+
+        // Show type/size meta; dims same as input in this tool
+        outMeta.textContent = `${fmtBytes(blob.size)}`;
+        outType.textContent = blob.type || `image/${outFmt}`;
+      } catch (err) {
+        console.error(err);
+        alert('Conversion failed. Try another format or smaller image.');
+      } finally {
+        btnConvert.disabled = false;
+        btnConvert.textContent = 'Convert';
+      }
+    }
+    btnConvert.addEventListener('click', convert);
+
+    async function convertImage(file, fmt, quality, bgColor){
+      // Read into a bitmap (fast, avoids EXIF headaches for most browsers)
+      const bmp = await createImageBitmap(file);
+      const w = bmp.width, h = bmp.height;
+
+      // Use OffscreenCanvas if available for a tiny perf bump
+      let canvas, ctx;
+      if ('OffscreenCanvas' in window) {
+        canvas = new OffscreenCanvas(w, h);
+        ctx = canvas.getContext('2d');
+      } else {
+        canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        ctx = canvas.getContext('2d');
+      }
+
+      // JPEG has no alpha: optionally paint background
+      if (fmt === 'jpeg') {
+        ctx.save();
+        ctx.fillStyle = bgColor || '#000';
+        ctx.fillRect(0, 0, w, h);
+        ctx.restore();
+      }
+
+      ctx.drawImage(bmp, 0, 0);
+
+      const type = `image/${fmt}`;
+      // convertToBlob for OffscreenCanvas; else HTMLCanvasElement.toBlob
+      if (canvas.convertToBlob) {
+        return await canvas.convertToBlob({ type, quality });
+      }
+      return await new Promise((res, rej) =>
+        canvas.toBlob(b => b ? res(b) : rej(new Error('toBlob failed')), type, quality)
+      );
+    }
+
+    // Initialize
+    updateControlsVisibility();
+    qVal.textContent = quality.value;
+  })();
+  </script>
 </body>
 </html>
-
