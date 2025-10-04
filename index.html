@@ -21,6 +21,8 @@
             --badge-bg: #f0f0f0;
             --btn-bg: #007bff;
             --btn-hover: #0056b3;
+            --hero-text: #333333;
+            --hero-bg: #ffffff;
         }
         [data-theme="dark"] {
             --bg-color: #1a1a1a;
@@ -31,11 +33,30 @@
             --badge-bg: #404040;
             --btn-bg: #0d6efd;
             --btn-hover: #0b5ed7;
+            --hero-text: #f0f0f0;
+            --hero-bg: #1a1a1a;
         }
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
             transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .hero {
+            background-color: var(--hero-bg);
+            color: var(--hero-text);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .hero h1, .hero p {
+            color: var(--hero-text);
+            transition: color 0.3s ease;
+        }
+        .hero h1 {
+            background: none !important; /* Override any existing background */
+            line-height: 1.2; /* Improve readability for tagline */
+            font-weight: 700;
+        }
+        .hero p {
+            line-height: 1.5; /* Better spacing for tagline */
         }
         .card {
             background-color: var(--card-bg);
@@ -95,7 +116,6 @@
 
         <section>
             <div class="grid">
-
                 <article class="card">
                     <h3>Small Caps Generator</h3>
                     <p>Convert text to Unicode small caps. Copy-ready.</p>
@@ -214,34 +234,36 @@
         <script>
             document.getElementById('y').textContent = new Date().getFullYear();
         </script>
-    </div>
 
-    <script>
-        // Theme toggle
-        document.addEventListener('DOMContentLoaded', () => {
-            const toggle = document.getElementById('theme-toggle');
-            const html = document.documentElement;
+        <script>
+            // Theme toggle (site-wide via localStorage)
+            document.addEventListener('DOMContentLoaded', () => {
+                const toggle = document.getElementById('theme-toggle');
+                const html = document.documentElement;
 
-            // Check for saved theme preference or OS preference
-            const savedTheme = localStorage.getItem('theme');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                // Check for saved theme preference or OS preference
+                const savedTheme = localStorage.getItem('theme');
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-                html.setAttribute('data-theme', 'dark');
-                toggle.textContent = '☀️';
-            } else {
-                html.setAttribute('data-theme', 'light');
-                toggle.textContent = '🌙';
-            }
+                if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                    html.setAttribute('data-theme', 'dark');
+                    if (toggle) toggle.textContent = '☼';
+                } else {
+                    html.setAttribute('data-theme', 'light');
+                    if (toggle) toggle.textContent = '☾';
+                }
 
-            toggle.addEventListener('click', () => {
-                const currentTheme = html.getAttribute('data-theme');
-                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-                html.setAttribute('data-theme', newTheme);
-                localStorage.setItem('theme', newTheme);
-                toggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+                if (toggle) {
+                    toggle.addEventListener('click', () => {
+                        const currentTheme = html.getAttribute('data-theme');
+                        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                        html.setAttribute('data-theme', newTheme);
+                        localStorage.setItem('theme', newTheme);
+                        toggle.textContent = newTheme === 'dark' ? '☼' : '☾';
+                    });
+                }
             });
-        });
-    </script>
+        </script>
+    </div>
 </body>
 </html>
