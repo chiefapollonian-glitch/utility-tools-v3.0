@@ -12,16 +12,74 @@
     <link rel="stylesheet" href="assets/theme.css">
     <link rel="stylesheet" href="assets/styles.css">
     <style>
-        .audio-warning { 
-            background: #ffeb3b; color: #d32f2f; padding: 12px; border-radius: 4px; margin: 20px 0; font-weight: bold; 
-            border-left: 4px solid #f57c00; text-align: center; 
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --card-bg: #f9f9f9;
+            --border-color: #e0e0e0;
+            --header-bg: #ffffff;
+            --badge-bg: #f0f0f0;
+            --btn-bg: #007bff;
+            --btn-hover: #0056b3;
+        }
+        [data-theme="dark"] {
+            --bg-color: #1a1a1a;
+            --text-color: #f0f0f0;
+            --card-bg: #2a2a2a;
+            --border-color: #404040;
+            --header-bg: #2a2a2a;
+            --badge-bg: #404040;
+            --btn-bg: #0d6efd;
+            --btn-hover: #0b5ed7;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        .badge {
+            background-color: var(--badge-bg);
+            color: var(--text-color);
+        }
+        .btn {
+            background-color: var(--btn-bg);
+            transition: background-color 0.3s ease;
+        }
+        .btn:hover {
+            background-color: var(--btn-hover);
+        }
+        header.site {
+            background-color: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
+        }
+        #theme-toggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-color);
+            transition: color 0.3s ease;
+            border-radius: 50%;
+            padding: 5px;
+        }
+        #theme-toggle:hover {
+            background-color: var(--badge-bg);
         }
     </style>
 </head>
-<body>
+<body data-theme="light">
     <div class="container">
         <header class="site">
-            <img class="logo" src="assets/logo.svg" alt="Utility Tools logo" style="width: 180px; height: auto;">
+            <button id="theme-toggle" aria-label="Toggle theme">🌙</button>
+            <img class="logo" src="assets/logo.svg" alt="Utility Tools logo" style="width: 120px; height: auto;">
             <div class="brand">Utility Tools by www.apollonianeye.uk</div>
         </header>
 
@@ -37,6 +95,7 @@
 
         <section>
             <div class="grid">
+
                 <article class="card">
                     <h3>Small Caps Generator</h3>
                     <p>Convert text to Unicode small caps. Copy-ready.</p>
@@ -56,7 +115,7 @@
                 </article>
 
                 <article class="card">
-                    <h3>Image Converter (updated)</h3>
+                    <h3>Image Converter</h3>
                     <p>PNG ↔ JPG ↔ WebP with quality control.</p>
                     <a class="btn" href="tools/images-convert.html">Open tool</a>
                 </article>
@@ -91,40 +150,36 @@
                     <a class="btn" href="tools/csv-json.html">Open tool</a>
                 </article>
 
-                <!-- Audio Warning Note -->
-                <div class="audio-warning">
-                    NOTE: The audio tools below are temporarily unavailable due to a transition from external CDN JavaScripts. We're hosting them locally for better security and reliability—back soon!
-                </div>
-
                 <article class="card">
                     <h3>Audio Denoise</h3>
                     <p>Reduce steady hiss on audio or video.</p>
-                    <a class="btn" href="tools/audio-denoise.html">Open tool (coming soon)</a>
+                    <a class="btn" href="tools/audio-denoise.html">Open tool</a>
                 </article>
-
+                
                 <article class="card">
                     <h3>Audio Trim</h3>
                     <p>Cut a clip by start + duration. Local only.</p>
-                    <a class="btn" href="tools/audio-trim.html">Open tool (coming soon)</a>
+                    <a class="btn" href="tools/audio-trim.html">Open tool</a>
                 </article>
 
                 <article class="card">
                     <h3>Audio Converter</h3>
                     <p>MP3/WAV/FLAC — all in your browser.</p>
-                    <a class="btn" href="tools/audio-convert.html">Open tool (coming soon)</a>
+                    <a class="btn" href="tools/audio-convert.html">Open tool</a>
                 </article>
 
                 <article class="card">
                     <h3>Video → Audio</h3>
                     <p>Extract audio as MP3, WAV, M4A or OGG.</p>
-                    <a class="btn" href="tools/video-to-audio.html">Open tool (coming soon)</a>
+                    <a class="btn" href="tools/video-to-audio.html">Open tool</a>
                 </article>
 
                 <article class="card">
                     <h3>Video Converter</h3>
                     <p>WebM (VP9/Opus) or MP4 (if supported).</p>
-                    <a class="btn" href="tools/video-convert.html">Open tool (coming soon)</a>
+                    <a class="btn" href="tools/video-convert.html">Open tool</a>
                 </article>
+
             </div>
         </section>
 
@@ -135,20 +190,22 @@
                 <a href="about.html">About</a> · 
                 <a href="contact.html">Contact</a> · 
                 <a href="privacy.html">Privacy</a><br><br>
+
+                <!-- New button -->
                 <a class="btn" href="https://www.apollonianeye.uk" target="_blank" rel="noopener">
                     Visit ApollonianEye.uk
                 </a>
             </div>
         </footer>
 
-        <!-- Bottom AdSense block (swap in real slot ID) -->
+        <!-- Bottom AdSense block needs slot number to be added later -->
         <section style="margin:30px 0; text-align:center;">
             <ins class="adsbygoogle"
-                 style="display:block"
-                 data-ad-client="ca-pub-2381000819704004"
-                 data-ad-slot="YOUR_SLOT_ID"
-                 data-ad-format="auto"
-                 data-full-width-responsive="true"></ins>
+                style="display:block"
+                data-ad-client="ca-pub-2381000819704004"
+                data-ad-slot="YOUR_SLOT_ID"
+                data-ad-format="auto"
+                data-full-width-responsive="true"></ins>
             <script>
                 (adsbygoogle = window.adsbygoogle || []).push({});
             </script>
@@ -158,6 +215,33 @@
             document.getElementById('y').textContent = new Date().getFullYear();
         </script>
     </div>
+
+    <script>
+        // Theme toggle
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggle = document.getElementById('theme-toggle');
+            const html = document.documentElement;
+
+            // Check for saved theme preference or OS preference
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                html.setAttribute('data-theme', 'dark');
+                toggle.textContent = '☀️';
+            } else {
+                html.setAttribute('data-theme', 'light');
+                toggle.textContent = '🌙';
+            }
+
+            toggle.addEventListener('click', () => {
+                const currentTheme = html.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                html.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                toggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+            });
+        });
+    </script>
 </body>
 </html>
-
