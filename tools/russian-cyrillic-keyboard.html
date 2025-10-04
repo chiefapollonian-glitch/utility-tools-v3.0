@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Russian Transliterator — Romanized to Cyrillic</title>
+<title>Russian Cyrillic Keyboard (Transliteration)</title>
 <link rel="icon" href="../assets/favicon.svg">
 <link rel="stylesheet" href="../assets/theme.css">
 <link rel="stylesheet" href="../assets/styles.css">
@@ -13,14 +13,13 @@
 <div class="container">
   <header class="site"><a class="brand" href="../index.html">← Utility Tools</a></header>
 
-  <h1 style="font-size:var(--h2-size);margin:6px 0 10px">Russian Transliterator</h1>
-  <p class="small">Type Romanized Russian (e.g., "privet" → "привет") and get Cyrillic output. Supports digraphs like "zh/sh/ch/shch". Copy the result.</p>
+  <h1 style="font-size:var(--h2-size);margin:6px 0 10px">Russian Cyrillic Keyboard (Transliteration)</h1>
+  <p class="small">Type Romanized Russian (e.g., "privet" → "привет") for real-time Cyrillic output. Uses GOST standard. Supports digraphs like zh/sh/ch/shch. Copy the result.</p>
 
   <div class="section">
     <label for="input">Romanized Input</label>
-    <textarea id="input" rows="6" placeholder="e.g., privet, kak dela? → привет, как дела?"></textarea>
+    <textarea id="input" rows="6" placeholder="e.g., privet, kak dela? → привет, как дела? (real-time)"></textarea>
     <div class="stack" style="margin-top:10px">
-      <button id="go">Transliterate</button>
       <button class="secondary" id="copy" style="display:none">Copy Output</button>
       <button class="secondary" id="clear">Clear</button>
     </div>
@@ -29,30 +28,59 @@
   <div class="section">
     <label>Cyrillic Output</label>
     <div id="output" class="out" style="min-height:100px;white-space:pre-wrap;font-family:monospace"></div>
-    <p class="small">Note: This uses standard GOST transliteration. Some words may need tweaks for dialects.</p>
+    <p class="small">GOST Romanization reference: a=а, e=е, i=и, o=о, u=у, y=ы, ya=я, ye=е, yo=ё, yu=ю; b=б, v=в, g=г, d=д, zh=ж, z=з, j=й, k=к, l=л, m=м, n=н, p=п, r=р, s=с, t=т, f=ф, kh=х, ts=ц, ch=ч, sh=ш, shch=щ, '=ь.</p>
   </div>
 
   <footer class="site"><a href="../index.html">← Back to tools</a></footer>
 </div>
 
 <script>
-const MAP = new Map(Object.entries({
-  // Vowels
-  'a':'а','e':'е','i':'и','o':'о','u':'у','y':'ы',
-  // Consonants
-  'b':'б','v':'в','g':'г','d':'д','zh':'ж','z':'з','j':'й','k':'к','l':'л','m':'м','n':'н','p':'п','r':'р','s':'с','t':'т','f':'ф','h':'х','ts':'ц','ch':'ч','sh':'ш','shch':'щ',
-  // Soft sign
-  '':'ь'  // Placeholder for soft sign (e.g., after b/c/d/f/g/h/k/l/m/n/p/r/s/t/v)
-}));
-const input = document.getElementById('input'), out = document.getElementById('out');
+const input = document.getElementById('input');
+const output = document.getElementById('output');
+const copyBtn = document.getElementById('copy');
+const clearBtn = document.getElementById('clear');
+
+// GOST transliteration map (diphthongs first, then singles; case-insensitive)
 const transliterate = (text) => {
-  let result = text.toLowerCase().replace(/([bcdfghklmnp r s t v])\s*ya?/g, '$1я').replace(/([bcdfghklmnp r s t v])\s*yu?/g, '$1ю').replace(/([bcdfghklmnp r s t v])\s*ye?/g, '$1е').replace(/([bcdfghklmnp r s t v])\s*yo?/g, '$1ё'); // Handle ya/yu/ye/yo
-  return [...result].map(ch => MAP.get(ch) ?? ch).join(''); // Map single chars
+  const lower = text.toLowerCase();
+  let result = lower
+    // Diphthongs (replace before singles)
+    .replace(/ya/g, 'я').replace(/yu/g, 'ю').replace(/ye/g, 'е').replace(/yo/g, 'ё')
+    .replace(/zh/g, 'ж').replace(/sh/g, 'ш').replace(/ch/g, 'ч').replace(/ts/g, 'ц').replace(/kh/g, 'х')
+    .replace(/shch/g, 'щ').replace(/'/g, 'ь') // Soft sign
+    // Vowels
+    .replace(/a/g, 'а').replace(/e/g, 'е').replace(/i/g, 'и').replace(/o/g, 'о').replace(/u/g, 'у').replace(/y/g, 'ы')
+    // Consonants
+    .replace(/b/g, 'б').replace(/v/g, 'в').replace(/g/g, 'г').replace(/d/g, 'д').replace(/z/g, 'з').replace(/j/g, 'й')
+    .replace(/k/g, 'к').replace(/l/g, 'л').replace(/m/g, 'м').replace(/n/g, 'н').replace(/p/g, 'п').replace(/r/g, 'р')
+    .replace(/s/g, 'с').replace(/t/g, 'т').replace(/f/g, 'ф').replace(/h/g, 'х').replace(/c/g, 'ц') // c=ts fallback
+    // Uppercase restore (simple: first letter upper)
+    .replace(/^(.)/, c => c.toUpperCase());
+  return result;
 };
-const convert = () => out.textContent = transliterate(input.value);
-document.getElementById('go').onclick = convert;
-document.getElementById('copy').onclick = async () => { await navigator.clipboard.writeText(out.textContent); alert('Copied!'); };
-document.getElementById('clear').onclick = () => { input.value=''; out.textContent=''; document.getElementById('copy').style.display = 'none'; };
+
+// Real-time input listener
+input.addEventListener('input', updateOutput);
+
+function updateOutput() {
+  output.textContent = transliterate(input.value); // Real-time full transliteration
+  copyBtn.style.display = input.value.trim() ? 'inline-block' : 'none';
+}
+
+function copyOutput() {
+  navigator.clipboard.writeText(output.textContent).then(() => alert('Copied!'));
+}
+
+clearBtn.onclick = () => {
+  input.value = '';
+  output.textContent = '';
+  copyBtn.style.display = 'none';
+};
+
+copyBtn.onclick = copyOutput;
+
+// Init
+updateOutput();
 </script>
 </body>
 </html>
