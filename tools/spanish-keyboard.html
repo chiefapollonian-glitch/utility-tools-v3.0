@@ -1,49 +1,13 @@
-
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Spanish Accents Keyboard — á é í ó ú ñ ¿</title>
-<link rel="icon" href="../assets/favicon.svg">
-<link rel="stylesheet" href="../assets/theme.css">
-<link rel="stylesheet" href="../assets/styles.css">
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2381000819704004"
-          crossorigin="anonymous"></script>
-</head>
-<body>
-<div class="container">
-  <header class="site"><a class="brand" href="../index.html">← Utility Tools</a></header>
-
-  <h1 style="font-size:var(--h2-size);margin:6px 0 10px">Spanish Accents Keyboard</h1>
-  <p class="small">Type with Ctrl+Alt (simulates Alt Gr) + a/e/i/o/u/n/? for á/é/í/ó/ú/ñ/¿. Real-time replacement. Copy the output.</p>
-
-  <div class="section">
-    <label for="input">Type here (use Ctrl+Alt + vowel/n/? for accents)</label>
-    <textarea id="input" rows="6" placeholder="e.g., Ctrl+Alt + a → á. Try: Hola mundo, cómo estás?"></textarea>
-    <div class="stack" style="margin-top:10px">
-      <button id="clear">Clear</button>
-      <button class="secondary" id="copy" style="display:none">Copy Output</button>
-    </div>
-  </div>
-
-  <div class="section">
-    <label>Output</label>
-    <div id="output" class="out" style="min-height:100px;white-space:pre-wrap;font-family:monospace"></div>
-  </div>
-
-  <footer class="site"><a href="../index.html">← Back to tools</a></footer>
-</div>
-
 <script>
 const input = document.getElementById('input');
 const output = document.getElementById('output');
 const copyBtn = document.getElementById('copy');
 const clearBtn = document.getElementById('clear');
 
-// Accents map (Ctrl+Alt + key → char)
+// Accents map (Alt + key → char)
 const accents = {
   'a': 'á', 'e': 'é', 'i': 'í', 'o': 'ó', 'u': 'ú',
-  'n': 'ñ', '?': '¿'
+  'n': 'ñ', '/': '¿', '?': '¿'  // Alt + / or Alt + ? (Shift + / on UK) → ¿
 };
 
 // Real-time input listener
@@ -51,7 +15,7 @@ input.addEventListener('input', updateOutput);
 input.addEventListener('keydown', handleKeyCombo);
 
 function handleKeyCombo(e) {
-  if (e.ctrlKey && e.altKey && accents[e.key]) {
+  if (e.altKey && accents[e.key]) {
     e.preventDefault();
     const accent = accents[e.key];
     insertAtCursor(input, accent);
@@ -86,5 +50,3 @@ clearBtn.onclick = () => {
 // Init
 updateOutput();
 </script>
-</body>
-</html>
