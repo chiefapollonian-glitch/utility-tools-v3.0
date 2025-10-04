@@ -1,45 +1,25 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Apollonian Eye — Utility Tools</title>
   <meta name="description" content="Free, private, in-browser tools for images, video, audio, and text." />
-  <meta name="color-scheme" content="light dark">
-  <!-- Address bar color (matches our defaults): light on desktop, dark on mobile -->
-  <meta name="theme-color" media="(min-width:801px)" content="#ffffff">
-  <meta name="theme-color" media="(max-width:800px)" content="#0b0b0d">
-
+  <!-- Light palette is default (desktop). Mobile switches to dark via media query below -->
   <style>
-    /* --------- Base palettes (used in AUTO) --------- */
     :root{
-      /* Light (desktop default) */
+      /* Light (desktop) */
       --bg:#ffffff; --fg:#0b0b0d; --muted:#5a5f6a; --brand:#e11d48; --card:#f6f7f9; --line:#e6e8ee;
       --link:#0a66ff; --ok:#16a34a; --warn:#d97706;
-      --logo:#000000; /* logo text is explicitly black in light mode */
     }
-    /* Dark (mobile default) */
+    /* Mobile dark override */
     @media (max-width:800px){
       :root{
         --bg:#0b0b0d; --fg:#e7e7ea; --muted:#9aa0a6; --brand:#e11d48; --card:#15161a; --line:#23252b;
         --link:#7aa2ff; --ok:#22c55e; --warn:#f59e0b;
-        --logo:#e7e7ea; /* logo text becomes light in dark mode */
       }
     }
 
-    /* --------- Forced overrides via toggle --------- */
-    [data-theme="light"]{
-      --bg:#ffffff; --fg:#0b0b0d; --muted:#5a5f6a; --brand:#e11d48; --card:#f6f7f9; --line:#e6e8ee;
-      --link:#0a66ff; --ok:#16a34a; --warn:#d97706;
-      --logo:#000000;
-    }
-    [data-theme="dark"]{
-      --bg:#0b0b0d; --fg:#e7e7ea; --muted:#9aa0a6; --brand:#e11d48; --card:#15161a; --line:#23252b;
-      --link:#7aa2ff; --ok:#22c55e; --warn:#f59e0b;
-      --logo:#e7e7ea;
-    }
-
-    /* --------- Layout & components --------- */
     html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
     a{color:var(--link);text-decoration:none}
     a:hover{text-decoration:underline}
@@ -47,7 +27,7 @@
     header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:8px 0 18px}
     .brand{display:flex;align-items:center;gap:10px}
     .dot{width:12px;height:12px;border-radius:50%;background:var(--brand)}
-    h1.logo-text{margin:0;font-size:1.4rem;color:var(--logo)}
+    h1{margin:0;font-size:1.4rem}
     .tag{font-size:.9rem;color:var(--muted)}
     .grid{display:grid;gap:16px}
     @media (min-width:720px){.grid{grid-template-columns:repeat(3,1fr)}}
@@ -67,15 +47,14 @@
     footer{margin:24px 0;color:var(--muted);font-size:.9rem}
     .notice{border:1px dashed var(--line);padding:10px;border-radius:12px;background:color-mix(in oklab, var(--card), transparent 40%)}
     .cluster{display:flex;flex-wrap:wrap;gap:8px}
-
-    /* Theme toggle button */
-    .theme-toggle{
-      display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--card);
-      color:var(--fg);padding:8px 12px;border-radius:999px;cursor:pointer;font:inherit
-    }
-    .theme-toggle svg{width:16px;height:16px;display:block}
-    .sr-only{position:absolute;left:-9999px}
   </style>
+
+  <!-- Tell browsers we support both; dark is used on mobile by our CSS override -->
+  <meta name="color-scheme" content="light dark">
+  <!-- Dark address bar on mobile: -->
+  <meta name="theme-color" media="(max-width:800px)" content="#0b0b0d">
+  <!-- Light address bar on desktop: -->
+  <meta name="theme-color" media="(min-width:801px)" content="#ffffff">
 </head>
 <body>
   <div class="wrap">
@@ -83,25 +62,18 @@
       <div class="brand">
         <div class="dot"></div>
         <div>
-          <h1 class="logo-text">Apollonian Eye — Utility Tools</h1>
+          <h1>Apollonian Eye — Utility Tools</h1>
           <div class="tag">All processing in your browser • No uploads • No sign-in</div>
         </div>
       </div>
-
-      <!-- Theme toggle (Auto → Light → Dark, with persistence) -->
-      <button class="theme-toggle" id="themeToggle" type="button" aria-live="polite">
-        <span id="themeIcon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4a8 8 0 1 0 8 8 6 6 0 0 1-8-8z"/></svg></span>
-        <span id="themeLabel">Auto</span>
-      </button>
+      <div class="cluster">
+        <span class="pill">Private by design</span>
+        <span class="pill">Open web tech</span>
+      </div>
     </header>
 
-    <section class="cluster" style="margin-bottom:10px">
-      <span class="pill">Private by design</span>
-      <span class="pill">Open web tech</span>
-    </section>
-
     <section class="notice" aria-live="polite">
-      Default: **Light on desktop**, **Dark on mobile**. Use the toggle to force Light or Dark.
+      Tip: On mobile this page switches to a comfortable **dark theme** automatically. Desktop stays light.
     </section>
 
     <main class="grid" style="margin-top:16px">
@@ -162,7 +134,7 @@
         </div>
       </article>
 
-      <!-- AUDIO / VIDEO (placeholders you can wire later) -->
+      <!-- AUDIO / VIDEO (coming soon placeholders) -->
       <article class="card">
         <h2>Extract Audio (Beta)</h2>
         <p>Pull audio from a video locally (OGG/WAV/FLAC). MP3 via server mode later.</p>
@@ -198,45 +170,13 @@
   </div>
 
   <script>
-    // Three-state theme toggle: Auto (default), Light, Dark.
-    // Auto uses CSS: desktop light, mobile dark (via media query).
-    (function themeToggle(){
-      const root = document.documentElement;
-      const btn = document.getElementById('themeToggle');
-      const label = document.getElementById('themeLabel');
-      const icon = document.getElementById('themeIcon');
-
-      const ICONS = {
-        auto: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4a8 8 0 1 0 8 8 6 6 0 0 1-8-8z"/></svg>', // half-moon-ish
-        light:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.76 4.84l-1.8-1.79L3.17 4.84l1.79 1.8 1.8-1.8zm10.48 0l1.8-1.79 1.79 1.79-1.79 1.8-1.8-1.8zM12 2h0v3h0V2zm0 17h0v3h0v-3zM2 12h3v0H2v0zm17 0h3v0h-3v0zM6.76 19.16l-1.8 1.8L3.17 19.16l1.79-1.8 1.8 1.8zm10.48 0l1.8 1.8 1.79-1.8-1.79-1.8-1.8 1.8zM12 6a6 6 0 1 0 .001 12A6 6 0 0 0 12 6z"/></svg>',
-        dark: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/></svg>'
-      };
-
-      function apply(mode){
-        // mode: 'auto' | 'light' | 'dark'
-        if(mode==='light'){ root.setAttribute('data-theme','light'); }
-        else if(mode==='dark'){ root.setAttribute('data-theme','dark'); }
-        else { root.removeAttribute('data-theme'); } // auto
-        label.textContent = mode[0].toUpperCase()+mode.slice(1);
-        icon.innerHTML = ICONS[mode];
-        localStorage.setItem('theme', mode);
-        // Update meta theme-color to match background for nicer mobile UI bars
-        const metaDark = document.querySelector('meta[media="(max-width:800px)"][name="theme-color"]');
-        const metaLight = document.querySelector('meta[media="(min-width:801px)"][name="theme-color"]');
-        if(mode==='light'){ metaDark.setAttribute('content','#ffffff'); metaLight.setAttribute('content','#ffffff'); }
-        else if(mode==='dark'){ metaDark.setAttribute('content','#0b0b0d'); metaLight.setAttribute('content','#0b0b0d'); }
-        else { metaDark.setAttribute('content','#0b0b0d'); metaLight.setAttribute('content','#ffffff'); }
-      }
-
-      function next(mode){ return mode==='auto' ? 'light' : mode==='light' ? 'dark' : 'auto'; }
-
-      let current = localStorage.getItem('theme') || 'auto';
-      apply(current);
-
-      btn.addEventListener('click', ()=>{
-        current = next(current);
-        apply(current);
-      });
+    // Optional: remember user preference and let them force dark/light.
+    // We default to: desktop light, mobile dark (CSS). This switcher adds override if you ever want one.
+    // Example usage later: add a small toggle that sets localStorage.theme = 'dark'|'light'|'auto'
+    (function applyUserTheme(){
+      const pref = localStorage.getItem('theme') || 'auto';
+      if(pref === 'auto') return; // let CSS media query handle it
+      document.documentElement.dataset.forceTheme = pref; // not used yet; keeping hook for future
     })();
   </script>
 </body>
