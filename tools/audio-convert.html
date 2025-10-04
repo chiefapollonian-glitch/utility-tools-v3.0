@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="../assets/theme.css">
 <link rel="stylesheet" href="../assets/styles.css">
 <!-- FFmpeg local scripts -->
-<script defer src="/vendor/ffmpeg/ffmpeg.min.js"></script>
+<script defer src="/vendor/ffmpeg/ffmpeg.min.js" onload="console.log('FFmpeg min.js loaded');" onerror="console.error('Failed to load FFmpeg min.js');"></script>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2381000819704004"
           crossorigin="anonymous"></script>
 </head>
@@ -60,6 +60,22 @@ function nameWithExt(name, ext) {
   return name.replace(/\.[^.]+$/, '') + '.' + ext; 
 }
 
+// Wait for FFmpegWASM to be available (poll if needed)
+function waitForFFmpegWASM() {
+  return new Promise((resolve, reject) => {
+    const check = () => {
+      if (typeof FFmpegWASM !== 'undefined') {
+        resolve();
+      } else if (document.readyState === 'complete') {
+        reject(new Error('FFmpeg library failed to load. Check Network tab for 404s on /vendor/ffmpeg/ffmpeg.min.js'));
+      } else {
+        setTimeout(check, 100);
+      }
+    };
+    check();
+  });
+}
+
 // Enhanced click handler with immediate feedback
 goBtn.onclick = async () => {
   const file = document.getElementById('f').files?.[0];
@@ -74,8 +90,9 @@ goBtn.onclick = async () => {
     // Lazy-load FFmpeg if not already done
     if (!ffmpeg) {
       log.textContent = 'Loading engine... (this may take 10-30s first time)';
+      await waitForFFmpegWASM(); // Ensure library loaded
       if (typeof FFmpegWASM === 'undefined') {
-        throw new Error('FFmpeg library not loaded. Check your connection or refresh the page.');
+        throw new Error('FFmpeg library not loaded. Check Network tab for errors on /vendor/ffmpeg/ffmpeg.min.js or refresh.');
       }
       const { FFmpeg } = FFmpegWASM;
       ffmpeg = new FFmpeg();
@@ -87,9 +104,10 @@ goBtn.onclick = async () => {
     }
 
     log.textContent = 'Converting... (this may take a few seconds)';
-    // Use fetchFile if available, or manual fetch
-    const fetchFile = (file) => fetch(file).then(res => res.arrayBuffer()).then(ab => new Uint8Array(ab));
-    await ffmpeg.writeFile('in', await fetchFile(file));
+    // Fetch file data from File object (not fetch URL)
+    const data = await file.arrayBuffer();
+    const uint8Array = new Uint8Array(data);
+    await ffmpeg.writeFile('in', uint8Array);
     if (ext === 'mp3') {
       const bps = Math.max(96, Math.min(320, parseInt(br.value || 192))) + 'k';
       await ffmpeg.exec(['-i', 'in', '-codec:a', 'libmp3lame', '-b:a', bps, target]);
@@ -98,8 +116,8 @@ goBtn.onclick = async () => {
     } else if (ext === 'flac') {
       await ffmpeg.exec(['-i', 'in', '-codec:a', 'flac', '-compression_level', '5', target]);
     }
-    const data = await ffmpeg.readFile(target);
-    const blob = new Blob([data.buffer], { 
+    const dataOut = await ffmpeg.readFile(target);
+    const blob = new Blob([dataOut.buffer], { 
       type: (ext === 'mp3' ? 'audio/mpeg' : (ext === 'wav' ? 'audio/wav' : 'audio/flac')) 
     });
     const a = document.getElementById('dl');
@@ -109,11 +127,11 @@ goBtn.onclick = async () => {
     log.textContent = 'Done! Check your download.';
   } catch (error) {
     console.error('Conversion error:', error); // For dev tools
-    log.textContent = `Error: ${error.message}. Try a smaller file (<10MB) or refresh.`;
+    log.textContent = `Error: ${error.message}. Try a smaller file (<10MB) or refresh. Check console for details.`;
   } finally {
     goBtn.disabled = false; // Re-enable button
     // Clean up files if loaded
-    if (ffmpeg && ffmpeg.isLoaded()) {
+    if (ffmpeg && await ffmpeg.isLoaded()) {
       try {
         await ffmpeg.deleteFile('in');
         await ffmpeg.deleteFile(target);
