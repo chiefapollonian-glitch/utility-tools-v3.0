@@ -116,6 +116,20 @@
         [data-theme="dark"] .audio-warning {
             background: #ff9800; color: #000000; border-left-color: #f57c00;
         }
+
+        /* NEW: On small screens, place the byline under the logo */
+        @media (max-width: 640px) {
+            header.site {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+            header.site .brand {
+                margin-left: 0;
+                margin-top: 6px;
+            }
+        }
     </style>
 </head>
 <body data-theme="light">
@@ -306,6 +320,3 @@
     </div>
 </body>
 </html>
-
-
-
