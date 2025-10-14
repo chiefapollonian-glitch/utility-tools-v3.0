@@ -17,6 +17,7 @@
 
   <h1 style="font-size:var(--h2-size);margin:6px 0 10px">Audio Converter</h1>
   <p class="small">Convert MP3/WAV/FLAC locally with ffmpeg.wasm. First run may take a moment to load.</p>
+  <p class="small note">🛡️ <strong>All local:</strong> Files never leave your device—no servers, no tracking. Runs on your hardware via WebAssembly. <em>Tips:</em> <5MB = any device; 10-50MB = 4GB+ RAM (close tabs); 100MB+ = 8GB+ RAM desktop. Chrome uses ~1-2GB extra for big jobs.</p>
 
   <div class="section">
     <label for="f">Choose audio file</label>
@@ -81,9 +82,6 @@ goBtn.onclick = async () => {
   const file = document.getElementById('f').files?.[0];
   if (!file) return alert('Pick a file');
   
-  // Add file size check
-  if (file.size > 10 * 1024 * 1024) return alert('File too big—try under 10MB.');
-  
   goBtn.disabled = true; // Prevent spam clicks
   log.textContent = 'Starting conversion... (loading engine if needed)';
   const ext = outfmt.value;
@@ -103,9 +101,9 @@ goBtn.onclick = async () => {
       ffmpeg.on('log', ({ message }) => { log.textContent += `\n${message}`; console.log(message); });
       // Progress is experimental—uncomment if wanted: ffmpeg.on('progress', ({ progress }) => { log.textContent = `${Math.round(progress * 100)}%`; });
       await ffmpeg.load({
-        coreURL: '/vendor/ffmpeg/ffmpeg-core.js',  // JS wrapper (add this file!)
-        wasmURL: '/vendor/ffmpeg/ffmpeg-core.wasm',  // Binary (renamed from your old coreURL)
-        workerURL: '/vendor/ffmpeg/ffmpeg-core.worker.js'  // Fixed name match
+        coreURL: '/vendor/ffmpeg/ffmpeg-core.js',  // JS wrapper
+        wasmURL: '/vendor/ffmpeg/ffmpeg-core.wasm',  // Binary
+        workerURL: '/vendor/ffmpeg/ffmpeg-worker.js'  // Fixed to match your file name
       });
       log.textContent = 'Engine loaded! Now converting...';
     }
@@ -134,7 +132,7 @@ goBtn.onclick = async () => {
     log.textContent = 'Done! Check your download.';
   } catch (error) {
     console.error('Conversion error:', error); // For dev tools
-    log.textContent = `Error: ${error.message}. Try a smaller file (<10MB) or refresh. Check console for details.`;
+    log.textContent = `Error: ${error.message}. Try a smaller file or refresh. Check console for details.`;
   } finally {
     goBtn.disabled = false; // Re-enable button
     // Clean up files if loaded
