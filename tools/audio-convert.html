@@ -81,6 +81,9 @@ goBtn.onclick = async () => {
   const file = document.getElementById('f').files?.[0];
   if (!file) return alert('Pick a file');
   
+  // Add file size check
+  if (file.size > 10 * 1024 * 1024) return alert('File too big—try under 10MB.');
+  
   goBtn.disabled = true; // Prevent spam clicks
   log.textContent = 'Starting conversion... (loading engine if needed)';
   const ext = outfmt.value;
@@ -96,9 +99,13 @@ goBtn.onclick = async () => {
       }
       const { FFmpeg } = FFmpegWASM;
       ffmpeg = new FFmpeg();
+      // Add optional log/progress hooks for better UX
+      ffmpeg.on('log', ({ message }) => { log.textContent += `\n${message}`; console.log(message); });
+      // Progress is experimental—uncomment if wanted: ffmpeg.on('progress', ({ progress }) => { log.textContent = `${Math.round(progress * 100)}%`; });
       await ffmpeg.load({
-        coreURL: '/vendor/ffmpeg/ffmpeg-core.wasm',
-        workerURL: '/vendor/ffmpeg/ffmpeg-worker.js'
+        coreURL: '/vendor/ffmpeg/ffmpeg-core.js',  // JS wrapper (add this file!)
+        wasmURL: '/vendor/ffmpeg/ffmpeg-core.wasm',  // Binary (renamed from your old coreURL)
+        workerURL: '/vendor/ffmpeg/ffmpeg-core.worker.js'  // Fixed name match
       });
       log.textContent = 'Engine loaded! Now converting...';
     }
@@ -131,7 +138,7 @@ goBtn.onclick = async () => {
   } finally {
     goBtn.disabled = false; // Re-enable button
     // Clean up files if loaded
-    if (ffmpeg && await ffmpeg.isLoaded()) {
+    if (ffmpeg && ffmpeg.isLoaded()) {  // Sync check—no await
       try {
         await ffmpeg.deleteFile('in');
         await ffmpeg.deleteFile(target);
